@@ -76,7 +76,6 @@ class data():
                 p.append(percentage / 100)
             if abs(tot - 100) > 0.01:
                 print("[Error]marginal do not add to 1: ", tot)
-
         else:
             uniques = self.dat[tar].unique()
             for u in sorted(uniques): # suppose we'll always use sorted to align the values

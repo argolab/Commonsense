@@ -33,7 +33,6 @@ class LLM:
     def get_initial_message(self):
         return self.initial_message.copy()
     
-
     def set_initial_message(self, message):
         self.initial_message = message.copy()
     
@@ -44,7 +43,7 @@ class LLM:
         self.current_json = []
         self.var_json = None
         self.current_dialogue = self.get_initial_message()
-
+        self.cons_json = []
 
 
     def cache(self, messages=None):
@@ -67,6 +66,7 @@ class LLM:
     
     def cache_json(self, message):
         self.json.append(message)
+    
     
     def get_cache_json(self):
         return self.json
