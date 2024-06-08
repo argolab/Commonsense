@@ -81,7 +81,7 @@ class Brute(nn.Module):
                 batch_target = self.batch_translate(entry['Batch Target'])
                 
                 for target, prob in zip(batch_target, entry['Batch Probability']):
-                    if condition is None or target is None:
+                    if target is None:
                         print("ERROR: invalid constraint type 2", entry)
                         continue
                     self.add_constraint(target, condition, prob)
