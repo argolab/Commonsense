@@ -24,7 +24,6 @@ class Brute(nn.Module):
         self.var_dict = dict()
         self.val_dict = dict()
         self.num_features = 0
-        #self.abstract_universe = []
 
 
     def forward(self, x):
@@ -152,12 +151,8 @@ class Brute(nn.Module):
     def calculate_entropy(self,):
         """
         Calculate the model entropy"""
-        if self.tot_fire is None:
-            denom = self.build_denom(torch.zeros(self.N))
-            matching = denom.unsqueeze(1) * self.mask
-            self.tot_fire = (matching == self.features_rem).all(dim=-1).float()
-        entropy_each = self.tot_fire * self.weights
-        entropy_each = torch.exp(entropy_each.sum(dim=-1))
+        entropy_each = torch.exp((self.features_firing * self.weights).sum(dim=-1))
+
         bot = entropy_each.sum()
         px = (entropy_each / bot)
         return 1 * (px * torch.log(px)).sum()
@@ -179,29 +174,11 @@ class Brute(nn.Module):
         update the total possible values for variable"""
         self.total_pos.append(possible)
 
-    
-    def add_entire_constraints(self, var, base, constraints):
-        """
-        deprecated"""
-        for i, constraint in enumerate(constraints):
-            tmp = base.clone().detach()
-            tmp[var] = i + 1
-            self.add_constraint(tmp, base, constraint)
-
-    def add_entire_ineq_constraints(self, var, base, constraints):
-        """
-        deprecated"""
-        for i, constraint in enumerate(constraints):
-            tmp = base.clone().detach()
-            tmp[var] = i + 1
-            self.add_constraint(tmp, base, constraint)
-            #print("adding constraint: ", tmp, base, constraint[0], constraint[1])
 
     def add_constraint(self, y, x, constraints):
         """
         Generic add single constraint, inequality or equality"""
         self.constraints.append([y, x, constraints])
-
 
 
     def build_universe(self, ):
@@ -236,7 +213,6 @@ class Brute(nn.Module):
 
         ret = ret.flatten()
 
-        #print("ret: ", ret, " for ", inputs, " in ", self.universe, " gives ", ret.unsqueeze(-1) * self.universe)
         if inputs is None:
             print(ret)
         return ret
@@ -370,32 +346,6 @@ class Brute(nn.Module):
                 #print("Violated: ", violated, " out of ", tot)
 
 
-    def infer_print(self, target=-1, conditions=None):
-        cond = torch.zeros(self.N).float().fill_(-1)
-        ret = []
-        #if conditions:
-        #    for condition in conditions:
-        #        index = self.variable_lookup[condition]
-        #        cond[index[0]] = index[1]
-        print("Conditions: ", conditions)
-        df = pd.DataFrame()
-        tar = cond.clone().detach()
-        tot = 0
-        if target == -1:
-            target = self.N - 1
-        for i in range(self.total_pos[target]):
-            tar[target] = i
-            print(tar)
-            inf = self.infer(tar, cond).item()
-            df[i] = [inf]
-            tot += inf
-        if abs(tot-1) > 0.001:
-            print("ERROR: Inference sum not 1")
-        df = df.T
-        print(df)
-        return ret
-    
-
     # ---------------------------Below are implementations for API reference------------------------------------------------------------------
 
     def nvars(self):
@@ -486,10 +436,14 @@ class Brute(nn.Module):
         cond = self.translate(proc_cond)
 
         ret = torch.zeros(self.total_pos[proc_tar])
+        tot = 0
         for i in range(self.total_pos[proc_tar]):
             tar_tmp = [{"Name": proc_tar, "Value": [i]}]
             tar = self.translate(tar_tmp)
             ret[i] = self.infer(tar, cond).item()
+            tot += ret[i]
+        if abs(tot - 1) > 0.001:
+            print("[Error]marginal do not add to 1: ", tot)
         return ret
         
         
