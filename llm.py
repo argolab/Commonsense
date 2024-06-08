@@ -6,7 +6,7 @@ import json
 dotenv.load_dotenv('/Users/shepardxia/Desktop/directory/commonsense/.env')
 
 class LLM:
-    def __init__(self, initial_message, json_format=None, model="gpt-4o"):
+    def __init__(self, initial_message, json_dialogue=None, model="gpt-4o"):
         self.chache = []
         self.json = []
         self.model = model
@@ -22,7 +22,9 @@ class LLM:
 
         self.cons_json = []
 
-        self.json_format = json_format
+        self.json_dialogue = json_dialogue
+
+        self.response = None
 
     def get_current_dialogue(self):
         return self.current_dialogue.copy()
@@ -35,6 +37,12 @@ class LLM:
     
     def set_initial_message(self, message):
         self.initial_message = message.copy()
+
+    def get_json_dialogue(self):
+        return self.json_dialogue.copy()
+    
+    def set_json_dialogue(self, messages):
+        self.json_dialogue = messages.copy()
     
 
     def reset(self):
@@ -72,11 +80,6 @@ class LLM:
         return self.json
     
 
-    def combine_json(self):
-        print('not implemented')
-        return self.json
-    
-
     def button(self, seq_dialogues, para_dialogues):
         self.reset()
         for i, dialogue in enumerate(seq_dialogues):
@@ -84,13 +87,12 @@ class LLM:
         for dialogue in para_dialogues:
             if dialogue is not None:
                 self.continue_from_last(dialogue)
-            self.get_json()
+            self.get_json(new_message=self.get_current_dialogue()[-1]['content'])
             self.cache()
-            self.backspace(cnt= 2 if dialogue else 1)
+            if dialogue is not None:
+                self.backspace(cnt = 1)
         return self.current_json
-            
 
-    
     def para_chat(self, messages, new_messages=[], temperature=0.5):
         ret = []
         for prompt in new_messages:
@@ -106,27 +108,42 @@ class LLM:
         return messages
 
 
-    def get_json(self, new_user_message=None, messages=None, temperature=0):
-        if messages is None:
-            messages = self.get_current_dialogue()
-        if new_user_message is None:
-            new_user_message = self.json_format
-            if self.current_json:
-                new_user_message += '\nWe already have the following JSON for variable definitons:\n'
-                new_user_message += self.current_json
+    def get_json(self, new_message=None, temperature=0):
 
-        ret = self.continue_chat(messages, new_user_message, temperature, json=True)
-        assistant_message = ret[-1]['content']
+        messages = self.get_json_dialogue()
+        messages.append({"role": "user", "content": '[real] ' + new_message})
+
+
+        response = self.client.chat.completions.create(
+                model=self.model,
+                response_format={ "type": "json_object" },
+                temperature=temperature,
+                messages=messages,
+            )
+
+
+        self.response = response
+        # Get the assistant's response
+        assistant_message = response.choices[0].message.content
+        
+        # Append the assistant's response to the message list
+        messages.append({"role": "assistant", "content": assistant_message})
+
+
+        self.prent(messages[-1:])
+
+        self.set_json_dialogue(messages.copy())
+
 
         if not self.current_json:
             self.current_json = assistant_message
         current_j = json.loads(assistant_message)
         if not self.var_json:
-            self.var_json = current_j['variables']
-        if 'constraints' in current_j and len(current_j['constraints']) > 0:
-            self.cons_json += current_j['constraints']
+            self.var_json = current_j['Variables']
+        if 'Constraints' in current_j and len(current_j['Constraints']) > 0:
+            self.cons_json += current_j['Constraints']
 
-        return ret
+        return assistant_message
 
     def continue_from_last(self, new_user_message=None, temperature=0.5, json=False):
         return self.continue_chat(self.get_current_dialogue(), new_user_message, temperature, json)
@@ -164,7 +181,7 @@ class LLM:
                 temperature=temperature,
                 messages=messages
             )
-        
+        self.response = response
         # Get the assistant's response
         assistant_message = response.choices[0].message.content
         
