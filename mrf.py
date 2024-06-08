@@ -54,8 +54,8 @@ class Brute(nn.Module):
                 data = json.loads(entire_json)
             else:
                 data = entire_json
-            self.json_vars(data['variables'])
-            self.json_constraints(data['probabilities'])
+            self.json_vars(data['Variables'])
+            self.json_constraints(data['Constraints'])
         else:
             if vars:
                 self.json_vars(vars)
@@ -79,7 +79,8 @@ class Brute(nn.Module):
                     print("ERROR: Invalid constraint type 1", entry)
                     continue
                 batch_target = self.batch_translate(entry['Batch Target'])
-                
+                if batch_target is None:
+                    continue
                 for target, prob in zip(batch_target, entry['Batch Probability']):
                     if target is None:
                         print("ERROR: invalid constraint type 2", entry)
@@ -114,7 +115,7 @@ class Brute(nn.Module):
             self.var_dict[name] = j
             self.var_dict[j] = name
         self.N = len(self.total_pos)
-        #self.vars_print()
+        self.vars_print()
 
     def vars_print(self):
         """
@@ -193,9 +194,9 @@ class Brute(nn.Module):
         checker = torch.arange(0, self.universe.shape[0])
         ret = torch.ones(self.universe.shape[0]).bool() if condition is None else condition
 
+
         if torch.is_tensor(inputs):
             inputs = inputs.int().tolist()
-
         if inputs is None:
             return ret.flatten()
 
@@ -272,26 +273,37 @@ class Brute(nn.Module):
         feature_firing = []
 
         features = set()
+        constraints = {}
 
         # tar and cond should have the same format, a list of total possible values
         # equality only
-        for (tar, cond, prob) in self.constraints:
+        for i, (tar, cond, prob) in enumerate(self.constraints):
             condition = self.get_mask(cond)
             target = self.get_mask(tar, condition=condition)
 
+            tar_tup = tuple(target.tolist())
+            cond_tup = tuple(condition.tolist())
+
+
+            if (tar_tup, cond_tup) in constraints.keys():
+                print("ERROR: Duplicate constraints with ", constraints[(tar_tup, cond_tup)])
+                continue
+            else:
+                constraints[(tar_tup, cond_tup)] = i
             self.targets.append(target)
             self.conditions.append(condition)
-            # check if condition is all true
-            if tuple(target.tolist()) in features and tuple(condition.tolist()) in features:
-                print("ERROR: Duplicate features?")
-            if tuple(target.tolist()) not in features:
-                features.add(tuple(target.tolist()))
+
+            if tar_tup not in features:
+                features.add(tar_tup)
                 feature_firing.append(target)
-            if tuple(condition.tolist()) not in features:
-                features.add(tuple(condition.tolist()))
+            if cond_tup not in features:
+                features.add(cond_tup)
                 feature_firing.append(condition)
 
+            if type(prob) == float:
+                prob = [prob]
             if len(prob) == 2:
+                print(i)
                 prob = [(prob[0] + prob[1])/2]
             self.constraints_values.append(prob)
         #print(features)
@@ -424,8 +436,11 @@ class Brute(nn.Module):
         """
         # translate the condition for input to translate()
         proc_cond = []
-        for key, values in condition.items():
-            proc_cond.append({'Name': key, 'Value': values})
+        if type(condition) != list:
+            for key, values in condition.items():
+                proc_cond.append({'Name': key, 'Value': values})
+        else:
+            proc_cond = condition
 
         proc_tar = -1
         if type(target) == str:
@@ -434,6 +449,7 @@ class Brute(nn.Module):
             proc_tar = self.N - 1
 
         cond = self.translate(proc_cond)
+        #print("Condition: ", cond, proc_cond)
 
         ret = torch.zeros(self.total_pos[proc_tar])
         tot = 0
@@ -445,5 +461,36 @@ class Brute(nn.Module):
         if abs(tot - 1) > 0.001:
             print("[Error]marginal do not add to 1: ", tot)
         return ret
+    
+
+    def query(self, query):
+        """
+        Query the model with a dictionary of variables and their values
+        """
+        if type(query) == str:
+            query = json.loads(query)
+        ret = []
+        if 'Queries' not in query:
+            print("ERROR: Invalid query")
+            return 'Invalid query'
+        for entry in query['Queries']:
+            query_target_var = -1
+            for check in ['Target', 'Batch Target']:
+                if check in entry:
+                    for target in entry[check]:
+                        query_target_var = target['Name']
+                        break
+                    if 'Condition' not in entry:
+                        condition = None
+                    else:
+                        condition = entry['Condition']
+                        print(condition)
+                    ret.append(self.marg(target=query_target_var, condition=condition))
+
+        if len(ret) == 1:
+            return ret[0]
+        return ret
+
+            
         
         
