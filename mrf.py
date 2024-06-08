@@ -73,7 +73,7 @@ class Brute(nn.Module):
             return
     
         for entry in constraints:
-            condition = self.translate(entry['Condition'])
+            condition = self.translate(entry['Condition']) if 'Condition' in entry else None
             if 'Target' not in entry:
                 if 'Batch Target' not in entry or 'Batch Probability' not in entry:
                     print("ERROR: Invalid constraint type 1", entry)
@@ -89,7 +89,7 @@ class Brute(nn.Module):
                     #    print(target, condition, prob)
             else:
                 target = self.translate(entry['Target'])
-                if condition is None or target is None:
+                if target is None:
                     print("ERROR: invalid constraint type 3", entry)
                     continue
                 self.add_constraint(target, condition, entry['Probability'])
@@ -196,6 +196,8 @@ class Brute(nn.Module):
         if torch.is_tensor(inputs):
             inputs = inputs.int().tolist()
 
+        if inputs is None:
+            return ret.flatten()
 
         for i, input in enumerate(inputs[::-1]):
             if torch.is_tensor(input):
@@ -213,8 +215,6 @@ class Brute(nn.Module):
 
         ret = ret.flatten()
 
-        if inputs is None:
-            print(ret)
         return ret
     
     def translate(self, inputs):
