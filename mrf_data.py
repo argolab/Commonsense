@@ -69,7 +69,7 @@ class data():
         p = []
         if tar == 'price':
             for i in range(len(self.bins[tar]) - 1):
-                percentage = ((pp[tar] < self.bins[tar][i+1]) & (pp[tar] >= self.bins[tar][i])).mean() * 100
+                percentage = ((pp[tar] <= self.bins[tar][i+1]) & (pp[tar] > self.bins[tar][i])).mean() * 100
                 print(f"{int(self.bins[tar][i])} - {int(self.bins[tar][i+1])}: \t{percentage:.2f}%")
                 #ret += f"{int(self.price_bins[i])} - {int(self.price_bins[i+1])}: \t{percentage:.2f}%\n"
                 tot += percentage

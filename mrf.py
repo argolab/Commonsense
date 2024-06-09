@@ -25,6 +25,9 @@ class Brute(nn.Module):
         self.val_dict = dict()
         self.num_features = 0
 
+        self.batch_target = "Batch Target"
+        self.batch_probability = "Batch Probability"
+
 
     def forward(self, x):
         """
@@ -37,6 +40,18 @@ class Brute(nn.Module):
         Set the weight for the entropy term, positive for maximization
         """
         self.w0 = w0
+
+
+    def update_white(self, data):
+        js = json.dumps(data)
+        # check if 'Batch ' is in the json
+        if 'Batch ' in js:
+            self.batch_target = 'Batch Target'
+            self.batch_probability = 'Batch Probability'
+        else:
+            self.batch_target = 'BatchTarget'
+            self.batch_probability = 'BatchProbability'
+            print("here")
 
     
     def from_json(self, entire_json=None, vars=None, constraints=None):
@@ -54,6 +69,7 @@ class Brute(nn.Module):
                 data = json.loads(entire_json)
             else:
                 data = entire_json
+            self.update_white(data)
             self.json_vars(data['Variables'])
             self.json_constraints(data['Constraints'])
         else:
@@ -75,18 +91,18 @@ class Brute(nn.Module):
         for entry in constraints:
             condition = self.translate(entry['Condition']) if 'Condition' in entry else None
             if 'Target' not in entry:
-                if 'Batch Target' not in entry or 'Batch Probability' not in entry:
+                if self.batch_target not in entry or self.batch_probability not in entry:
                     print("ERROR: Invalid constraint type 1", entry)
                     continue
-                batch_target = self.batch_translate(entry['Batch Target'])
+                batch_target = self.batch_translate(entry[self.batch_target])
                 if batch_target is None:
                     continue
-                for target, prob in zip(batch_target, entry['Batch Probability']):
+                for target, prob in zip(batch_target, entry[self.batch_probability]):
                     if target is None:
                         print("ERROR: invalid constraint type 2", entry)
                         continue
                     self.add_constraint(target, condition, prob)
-                    #if entry['Batch Target'][0]['Name'] == 'Price Ranges':
+                    #if entry[self.batch_target][0]['Name'] == 'Price Ranges':
                     #    print(target, condition, prob)
             else:
                 target = self.translate(entry['Target'])
@@ -475,7 +491,7 @@ class Brute(nn.Module):
             return 'Invalid query'
         for entry in query['Queries']:
             query_target_var = -1
-            for check in ['Target', 'Batch Target']:
+            for check in ['Target', self.batch_target]:
                 if check in entry:
                     for target in entry[check]:
                         query_target_var = target['Name']

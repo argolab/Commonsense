@@ -15,7 +15,7 @@ class LLM:
         with open(prompt, 'r') as f:
             self.prompt = json.load(f)
         if 'initial_message' in self.prompt:
-            self.initial_message = self.prompt['initial_message'].copy()
+            self.set_initial_message(self.prompt['initial_message'])
         else:
             raise ValueError('No initial message provided')
         
@@ -57,7 +57,7 @@ class LLM:
         return self.initial_message.copy()
     
     def set_initial_message(self, message):
-        self.initial_message = message.copy()
+        self.initial_message = [{'role': 'system', 'content': message}]
 
     def get_json_dialogue(self):
         return self.json_dialogue.copy()
@@ -73,7 +73,6 @@ class LLM:
         self.var_json = None
         self.current_dialogue = self.get_initial_message()
         self.cons_json = []
-
 
     def cache(self, messages=None):
         if messages:
@@ -179,7 +178,6 @@ class LLM:
         
         :param messages: List of previous messages in the conversation
         :param new_user_message: New message from the user
-        :param model: Model to use for generating responses (default is "gpt-4")
         :param temperature: Temperature setting for the model (default is 0.5)
         :return: Assistant's response
         """
@@ -255,7 +253,7 @@ class LLM:
         self.add_condition()
 
 
-    def add_condition(self, place='initial_message'):
+    def add_condition(self, place='varq'):
 
         exist = False
         for check in ['Target', 'Condition']:
@@ -271,24 +269,24 @@ class LLM:
         if place == 'initial_message':
             self.prompt[place][0]['content'] += ' Specifically, we would like to be able to answer the question: ' + text
         else:
-            self.prompt[place] += ' Specifically, we would like to be able to answer the question: ' + text
-        #self.prompt[place] += '\nAdditionally without loss of generality, we would like to be able to answer questions such as: ' + text
-        #self.prompt[place] += '\nMake sure that the updated variables can answer this question.'
-        """ self.prompt[place] += ' For each of the mentioned conditions, you could either\n' + '\n1. Include variables like: \n'
+            #self.prompt[place] += ' Specifically, we would like to be able to answer the question: ' + text
+            self.prompt[place] += '\nAdditionally without loss of generality, we would like to be able to answer questions such as: ' + text
+            self.prompt[place] += '\nMake sure that the updated variables can express such questions with existing variables. '
+            """ self.prompt[place] += ' For each of the mentioned conditions, you could either\n' + '\n1. Include variables like: \n'
 
 
-        for check in ['Target', 'Condition']:
-            if check in self.question:
-                for var in self.question[check]:
-                    self.prompt[place] += var['Name']
-                    if 'Value' in var:
-                        self.prompt[place] += ' that can express ' + ', '.join(var['Value']) + '\n'
-                    else:
-                        self.prompt[place] += '\n'
-        
-        self.prompt[place] += 'However, you can choose the variable values as you see fit, e.g. when a_1 and a_2 are mentioned, it may be more reasonable to represent them with a_12, while giving additional values a_3, a_4. This allows us to consider such questions without loss of generality. \n'
-        self.prompt[place] += '\n\n2. Restrict the domain of our discussion to those specific scenarios to simplify the problem, especially if it can be leveraged to produce more meaningful variables specific to the scenario. In this case, it will not count towards the maximum amount of variables used. Remember to try to leverage this specific scenario with other possible variables.\n'  """
-        
+            for check in ['Target', 'Condition']:
+                if check in self.question:
+                    for var in self.question[check]:
+                        self.prompt[place] += var['Name']
+                        if 'Value' in var:
+                            self.prompt[place] += ' that can express ' + ', '.join(var['Value']) + '\n'
+                        else:
+                            self.prompt[place] += '\n'
+            
+            self.prompt[place] += 'However, you can choose the variable values as you see fit, e.g. when a_1 and a_2 are mentioned, it may be more reasonable to represent them with a_12, while giving additional values a_3, a_4. This allows us to consider such questions without loss of generality. \n'
+            self.prompt[place] += '\n\n2. Restrict the domain of our discussion to those specific scenarios to simplify the problem, especially if it can be leveraged to produce more meaningful variables specific to the scenario. In this case, it will not count towards the maximum amount of variables used. Remember to try to leverage this specific scenario with other possible variables.\n'  """
+            
 
         print("Modified variable question: ", self.prompt[place])
 
