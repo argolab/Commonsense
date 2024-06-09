@@ -2,6 +2,8 @@ from openai import OpenAI
 import dotenv
 import rich
 import json
+import torch
+import numpy as np
 
 dotenv.load_dotenv('/Users/shepardxia/Desktop/directory/commonsense/.env')
 
@@ -14,10 +16,10 @@ class LLM:
         # load prompt
         with open(prompt, 'r') as f:
             self.prompt = json.load(f)
-        if 'initial_message' in self.prompt:
-            self.set_initial_message(self.prompt['initial_message'])
-        else:
-            raise ValueError('No initial message provided')
+        #if 'initial_message' in self.prompt:
+        #    self.set_initial_message(self.prompt['initial_message'])
+        #else:
+        #    raise ValueError('No initial message provided')
         
         self.current_dialogue = None
 
@@ -44,20 +46,78 @@ class LLM:
 
         self.query_q = None
 
+        self.zero = []
+        self.zerojs = []
 
+        self.cot_messages = None
+
+
+    def get_zero(self, ):
+        #self.reset()
+        question = self.question['Text']
+        if 'bins' in self.prompt:
+            question += '\n' + self.prompt['bins']
+        else:
+            question += self.prompt['freebins']
+        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
+        messages = self.continue_chat(self.get_initial_message(version='zero'), question, update=False).copy()
+        return self.get_prob(messages)
     
 
+
+    def get_cot(self):
+        if not self.cot_messages:
+            self.button(js=False, cot=True)
+
+        question = self.question['Text']
+        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
+        messages = self.continue_chat(self.cot_messages, question, update=False).copy()
+        short_mes = messages[:1] + messages[-2:]
+        return self.get_prob(short_mes)
+        
+
+
+
+    def get_prob(self, messages):
+        messages = messages.copy()
+        messages.append({"role": "user", "content": self.prompt['getprob']})
+        # get JSON
+        response = self.client.chat.completions.create(
+            model=self.model,
+            response_format={ "type": "json_object" },
+            temperature=0,
+            messages=messages,
+        )
+        assistant_message = response.choices[0].message.content
+        messages.append({"role": "assistant", "content": assistant_message})
+        self.zero.append(messages)
+        js = json.loads(assistant_message)
+        array = np.array(js['Probability'])
+        self.zerojs.append(array)
+        return array
+        
+
+
     def get_current_dialogue(self):
+        if self.current_dialogue is None:
+            self.current_dialogue = self.get_initial_message()
         return self.current_dialogue.copy()
     
     def set_current_dialogue(self, messages):
         self.current_dialogue = messages.copy()
+
     
-    def get_initial_message(self):
-        return self.initial_message.copy()
+    def get_initial_message(self, version='default'):
+
+        if 'initial_message' not in self.prompt:
+            raise ValueError('No initial message provided in prompt.')
+        if version not in self.prompt:
+            raise ValueError('No version of initial message provided in prompt.')
+        tmp = (self.prompt['initial_message'] + self.prompt[version])
+
+        return [{'role': 'system', 'content': tmp}].copy()
     
-    def set_initial_message(self, message):
-        self.initial_message = [{'role': 'system', 'content': message}]
+
 
     def get_json_dialogue(self):
         return self.json_dialogue.copy()
@@ -97,25 +157,33 @@ class LLM:
     
     def get_cache_json(self):
         return self.json
-    
 
-    def button(self, sequences=None, question=True):
+
+    def button(self, sequences=None, question=True, js=True, cot=True):
         if sequences is None:
             sequences = self.sequences
         self.reset()
         for dialogue in sequences[0]:
             self.continue_from_last(self.prompt[dialogue])
+        cot_messages = self.get_current_dialogue()
         for dialogue in sequences[1]:
             if dialogue is not None:
                 self.continue_from_last(self.prompt[dialogue])
-            self.get_json(new_message=self.get_current_dialogue()[-1]['content'])
-            self.cache()
-            if dialogue is not None:
-                self.backspace(cnt = 1)
-        if question and self.question:
+                if cot:
+                    cot_messages += (self.get_current_dialogue()[-2:])
+            if js:
+                self.get_json(new_message=self.get_current_dialogue()[-1]['content'])
+                self.cache()
+                if dialogue is not None:
+                    self.backspace(cnt = 1)
+        if cot:
+            self.cot_messages = cot_messages
+        if not js:
+            return
+        if js and question and self.question:
             self.query_q = self.get_json(new_message=self.question['Text'], query=True)
             return self.current_json, self.query_q
-        return self.current_json
+        return self.current_json, None
 
     
     def iter_chat(self, messages=None, new_messages=[], temperature=0.5):
@@ -169,10 +237,11 @@ class LLM:
 
         return assistant_message
 
-    def continue_from_last(self, new_user_message=None, temperature=0.5, json=False):
-        return self.continue_chat(self.get_current_dialogue(), new_user_message, temperature, json)
+    def continue_from_last(self, new_user_message=None, temperature=0.5):
+        return self.continue_chat(self.get_current_dialogue(), new_user_message, temperature)
+    
 
-    def continue_chat(self, messages, new_user_message=None, temperature=0.5, json=False):
+    def continue_chat(self, messages, new_user_message=None, temperature=0.5, update=True):
         """
         Continue the chat with the GPT model.
         
@@ -189,20 +258,12 @@ class LLM:
             messages.append({"role": "user", "content": new_user_message})
         
         # Send the updated message list to the API
-        if json:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                response_format={ "type": "json_object" },
-                temperature=temperature,
-                messages=messages,
-            )
-        else:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                response_format={ "type": "text" },
-                temperature=temperature,
-                messages=messages
-            )
+        response = self.client.chat.completions.create(
+            model=self.model,
+            response_format={ "type": "text" },
+            temperature=temperature,
+            messages=messages
+        )
         self.response = response
         # Get the assistant's response
         assistant_message = response.choices[0].message.content
@@ -213,7 +274,8 @@ class LLM:
 
         self.prent(messages[-2:])
 
-        self.set_current_dialogue(messages.copy())
+        if update:
+            self.set_current_dialogue(messages.copy())
 
 
         #return assistant_message, messages
