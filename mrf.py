@@ -25,8 +25,8 @@ class Brute(nn.Module):
         self.val_dict = dict()
         self.num_features = 0
 
-        self.batch_target = "Batch Target"
-        self.batch_probability = "Batch Probability"
+        self.batch_target = "BatchTarget"
+        self.batch_probability = "BatchProbability"
 
 
     def forward(self, x):
@@ -477,7 +477,7 @@ class Brute(nn.Module):
         if abs(tot - 1) > 0.001:
             print("[Error]marginal do not add to 1: ", tot)
         return ret
-    
+
 
     def query(self, query):
         """
