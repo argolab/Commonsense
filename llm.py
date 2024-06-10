@@ -5,10 +5,10 @@ import json
 import torch
 import numpy as np
 
-dotenv.load_dotenv('/Users/shepardxia/Desktop/directory/commonsense/.env')
+dotenv.load_dotenv('.env')
 
 class LLM:
-    def __init__(self, prompt='./prompt.json', model="gpt-4o", question=None, sequences=None):
+    def __init__(self, prompt='./example_files/prompt.json', model="gpt-4o", question=None, sequences=None):
         self.chache = []
         self.json = []
         self.model = model

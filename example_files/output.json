@@ -1,0 +1,34 @@
+{
+  "Target": [
+    {
+      "Name": "price",
+      "Type": "float"
+    }
+  ],
+  "Condition": [
+    {
+      "Name": "property type",
+      "Type": "str",
+      "Value": [
+        "villa"
+      ]
+    },
+    {
+      "Name": "bathrooms",
+      "Type": "int",
+      "Value": [
+        "2",
+        "3+"
+      ]
+    },
+    {
+      "Name": "city",
+      "Type": "str",
+      "Value": [
+        "New York",
+        "Los Angeles"
+      ]
+    }
+  ],
+  "Text": "What is the nightly price of an Airbnb listing in a villa with 2 or more bathrooms located in New York or Los Angeles?"
+}

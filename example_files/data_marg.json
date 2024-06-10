@@ -1,0 +1,16 @@
+{
+    "Text": "What is the nightly price of an Airbnb listing that is a private room in a property with at most 3 beds?",
+    "Target": [
+        {
+            "Name": "bed_type",
+            "Type": "str"
+        }
+    ],
+    "Condition": [
+        {
+            "Name": "room_type",
+            "Type": "str",
+            "Value": ["Private room"]
+        }
+    ]
+}
