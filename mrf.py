@@ -51,7 +51,6 @@ class Brute(nn.Module):
         else:
             self.batch_target = 'BatchTarget'
             self.batch_probability = 'BatchProbability'
-            print("here")
 
     
     def from_json(self, entire_json=None, vars=None, constraints=None):
@@ -326,6 +325,7 @@ class Brute(nn.Module):
         self.targets = torch.stack(self.targets, dim=0)
         self.conditions = torch.stack(self.conditions, dim=0)
         self.features_firing = torch.stack(feature_firing, dim=0).t()
+        print(self.constraints_values)
         self.constraints_values = torch.tensor(self.constraints_values).squeeze()
         
         self.num_features = self.features_firing.shape[1]
@@ -342,7 +342,7 @@ class Brute(nn.Module):
         return features
 
 
-    def update(self, epochs=100):
+    def update(self, epochs=100, slack=False):
 
         """
         Training"""
@@ -361,7 +361,14 @@ class Brute(nn.Module):
             targets = tar_firing.sum(dim=-1)
             conditions = cond_firing.sum(dim=-1)
 
-            loss = (targets / conditions - self.constraints_values).pow(2).sum()
+            loss = (targets / conditions - self.constraints_values)
+            # cut out ones with loss less than 0.02
+            if not slack:
+                loss = loss.pow(2).sum()
+            else:
+                loss = loss[torch.abs(loss) > 0.01].pow(2).sum()
+
+
             #print("weights: ", self.weights)
             if self.w0 != 0:
                 loss += self.w0 * self.calculate_entropy()
@@ -370,7 +377,8 @@ class Brute(nn.Module):
             self.optim.step()
             self.losses.append(loss.detach())
             if n % (epochs // 5) == 0 or n == epochs - 1:
-                print("Loss: ", loss, (targets / conditions - self.constraints_values).pow(2).mean())
+                tmp = targets / conditions - self.constraints_values
+                print("Loss: ", loss, torch.abs(tmp).mean().item(), torch.abs(tmp).max().item(), torch.abs(tmp).min().item())
                 #print("Violated: ", violated, " out of ", tot)
 
 
@@ -424,7 +432,7 @@ class Brute(nn.Module):
             print("ERROR: Value name must be a string")
             return -1
         if val not in self.val_dict[var]:
-            print("ERROR: Value not found")
+            print("ERROR: Value not found", val)
             return -1
         return self.val_dict[var][val]
 

@@ -8,20 +8,22 @@ import numpy as np
 dotenv.load_dotenv('.env')
 
 class LLM:
-    def __init__(self, prompt='./example_files/prompt.json', model="gpt-4o", question=None, sequences=None):
-        self.chache = []
+    def __init__(self, prompt='./example_files/prompt.json', model="gpt-4o", question=None, sequences=None, json_model="gpt-4o", prob_model='gpt-3.5-turbo', verbose=False):
         self.json = []
+
         self.model = model
+        self.json_model = json_model
+        self.prob_model = prob_model
+
         self.client = OpenAI()
         # load prompt
         with open(prompt, 'r') as f:
             self.prompt = json.load(f)
-        #if 'initial_message' in self.prompt:
-        #    self.set_initial_message(self.prompt['initial_message'])
-        #else:
-        #    raise ValueError('No initial message provided')
+
+        self.verbose = verbose
         
         self.current_dialogue = None
+
 
         self.current_json = None
         self.var_json = None
@@ -49,7 +51,16 @@ class LLM:
         self.zero = []
         self.zerojs = []
 
-        self.cot_messages = None
+
+        self.dialogues = {}
+        self.dialogues['mrf'] = {}
+        self.dialogues['cot'] = {}
+        self.dialogues['zero'] = {}
+
+        self.results = {}
+
+        self.error = False
+        
 
 
     def get_zero(self, ):
@@ -60,53 +71,71 @@ class LLM:
         else:
             question += self.prompt['freebins']
         question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
-        messages = self.continue_chat(self.get_initial_message(version='zero'), question, update=False).copy()
-        return self.get_prob(messages)
-    
+        messages = self.chat(self.get_initial_message(version='zero'), question, update=False).copy()
+        self.dialogues['zero'] = {}
+        self.dialogues['zero']['main dialogue'] = messages.copy()
+        messages, prob = self.get_prob(messages)
+        self.dialogues['zero']['probability dialogue'] = messages.copy()
+        self.results['zero'] = prob.tolist()
+        return prob
 
 
-    def get_cot(self):
-        if not self.cot_messages:
-            self.button(js=False, cot=True)
+    def set_verbose(self, verbose):
+        self.verbose = verbose
+
+
+    def get_cot(self, sequences=None):
+        if 'cot' not in self.dialogues or 'main dialogue' not in self.dialogues['cot']:
+            self.button(sequences=sequences, js=False)
+        
 
         question = self.question['Text']
         question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
-        messages = self.continue_chat(self.cot_messages, question, update=False).copy()
+        messages = self.chat(self.dialogues['cot']['main dialogue'], question, update=False).copy()
+        self.dialogues['cot']['main dialogue'] = messages.copy()
         short_mes = messages[:1] + messages[-2:]
-        return self.get_prob(short_mes)
-        
-
+        latest, prob = self.get_prob(short_mes)
+        self.dialogues['cot']['probability dialogue'] = latest.copy()
+        self.results['cot'] = prob.tolist()
+        return prob
 
 
     def get_prob(self, messages):
+
         messages = messages.copy()
         messages.append({"role": "user", "content": self.prompt['getprob']})
-        # get JSON
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=self.prob_model,
             response_format={ "type": "json_object" },
             temperature=0,
             messages=messages,
         )
         assistant_message = response.choices[0].message.content
         messages.append({"role": "assistant", "content": assistant_message})
-        self.zero.append(messages)
-        js = json.loads(assistant_message)
-        array = np.array(js['Probability'])
-        self.zerojs.append(array)
-        return array
-        
+
+        latest = messages.copy()[-2:]
+
+        try:
+            js = json.loads(assistant_message)
+            array = np.array(js['Probability'])
+        except:
+            print('Error: Could not parse JSON')
+            self.error = True
+            array = None
+
+        return latest, array
+
 
 
     def get_current_dialogue(self):
         if self.current_dialogue is None:
             self.current_dialogue = self.get_initial_message()
         return self.current_dialogue.copy()
-    
+
     def set_current_dialogue(self, messages):
         self.current_dialogue = messages.copy()
 
-    
+
     def get_initial_message(self, version='default'):
 
         if 'initial_message' not in self.prompt:
@@ -116,7 +145,6 @@ class LLM:
         tmp = (self.prompt['initial_message'] + self.prompt[version])
 
         return [{'role': 'system', 'content': tmp}].copy()
-    
 
 
     def get_json_dialogue(self):
@@ -124,74 +152,53 @@ class LLM:
     
     def set_json_dialogue(self, messages):
         self.json_dialogue = messages.copy()
-    
+
+
 
     def reset(self):
-        self.chache = []
         self.json = []
         self.current_json = None
         self.var_json = None
         self.current_dialogue = self.get_initial_message()
         self.cons_json = []
 
-    def cache(self, messages=None):
-        if messages:
-            self.chache.append(messages)
-        else:
-            self.chache.append(self.get_current_dialogue())
-
-    def get_cache(self):
-        return self.chache
+    def big_button(self, ):
+        self.reset()
+        js, query = self.button()
+        cot = self.get_cot()
+        zero = self.get_zero()
+        self.log()
+        return js, query, cot, zero
     
-    def load_dialogue(self, messages=None, index=None):
-        if messages:
-            self.set_current_dialogue(messages)
-        else:
-            if index:
-                self.set_current_dialogue(self.chache[index])
-            else:
-                self.set_current_dialogue(self.chache[-1])
-    
-    def cache_json(self, message):
-        self.json.append(message)
-    
-    def get_cache_json(self):
-        return self.json
 
-
-    def button(self, sequences=None, question=True, js=True, cot=True):
+    def button(self, sequences=None, question=True, js=True, linear=False):
         if sequences is None:
             sequences = self.sequences
-        self.reset()
         for dialogue in sequences[0]:
-            self.continue_from_last(self.prompt[dialogue])
-        cot_messages = self.get_current_dialogue()
+            messages = self.continue_from_last(self.prompt[dialogue])
+
+        self.dialogues['mrf']['main dialogue'] = self.get_current_dialogue()
+        self.dialogues['cot']['main dialogue'] = self.get_current_dialogue()
+        if js:
+            self.dialogues['mrf']['json dialogue'] = []
+        
         for dialogue in sequences[1]:
             if dialogue is not None:
-                self.continue_from_last(self.prompt[dialogue])
-                if cot:
-                    cot_messages += (self.get_current_dialogue()[-2:])
+                messages = self.continue_from_last(self.prompt[dialogue], update=linear)
+                self.dialogues['cot']['main dialogue'] += messages[-2:].copy()
+                self.dialogues['mrf'][dialogue] = messages.copy()
             if js:
-                self.get_json(new_message=self.get_current_dialogue()[-1]['content'])
-                self.cache()
-                if dialogue is not None:
-                    self.backspace(cnt = 1)
-        if cot:
-            self.cot_messages = cot_messages
+                messages = self.get_json(new_message=messages[-1]['content'])
+                self.dialogues['mrf']['json dialogue'] += messages[-2:].copy()
         if not js:
             return
         if js and question and self.question:
-            self.query_q = self.get_json(new_message=self.question['Text'], query=True)
-            return self.current_json, self.query_q
+            messages = self.get_json(new_message=self.question['Text'], query=True)
+            self.dialogues['mrf']['json dialogue'] += messages[-2:].copy()
+            query_q = messages[-1]['content']
+            self.dialogues['mrf']['query'] = messages.copy()
+            return self.current_json, query_q
         return self.current_json, None
-
-    
-    def iter_chat(self, messages=None, new_messages=[], temperature=0.5):
-        if messages is None:
-            messages = self.get_initial_message()
-        for prompt in new_messages:
-            messages = self.continue_chat(messages, prompt, temperature=temperature)
-        return messages
 
 
     def get_json(self, new_message=None, temperature=0, query=False):
@@ -205,7 +212,7 @@ class LLM:
 
 
         response = self.client.chat.completions.create(
-                model=self.model,
+                model=self.json_model,
                 response_format={ "type": "json_object" },
                 temperature=temperature,
                 messages=messages,
@@ -220,7 +227,8 @@ class LLM:
 
         self.prent(messages[-1:])
 
-        self.set_json_dialogue(messages.copy())
+        if not self.current_json:
+            self.set_json_dialogue(messages.copy())
 
         current_j = json.loads(assistant_message)
 
@@ -235,13 +243,14 @@ class LLM:
                 self.cons_json += current_j['Constraints'].copy()
                 self.current_json['Constraints'] += current_j['Constraints'].copy()
 
-        return assistant_message
+        return messages.copy()
 
-    def continue_from_last(self, new_user_message=None, temperature=0.5):
-        return self.continue_chat(self.get_current_dialogue(), new_user_message, temperature)
+
+    def continue_from_last(self, new_user_message=None, temperature=0.5, update=True):
+        return self.chat(self.get_current_dialogue(), new_user_message, temperature, update=update)
     
 
-    def continue_chat(self, messages, new_user_message=None, temperature=0.5, update=True):
+    def chat(self, messages, new_user_message=None, temperature=0.5, update=True):
         """
         Continue the chat with the GPT model.
         
@@ -256,6 +265,8 @@ class LLM:
             messages = self.get_initial_message()
         if new_user_message:
             messages.append({"role": "user", "content": new_user_message})
+
+        messages = messages.copy()
         
         # Send the updated message list to the API
         response = self.client.chat.completions.create(
@@ -278,10 +289,8 @@ class LLM:
             self.set_current_dialogue(messages.copy())
 
 
-        #return assistant_message, messages
-        return messages
+        return messages.copy()
 
-        
 
     def backspace(self, messages=None, cnt=1):
         """
@@ -297,23 +306,19 @@ class LLM:
             self.set_current_dialogue(self.get_current_dialogue()[:-int(cnt*2)])
             messages = self.get_current_dialogue()
 
-        #self.prent(messages)
-        
-        # Return the updated list of messages
         return messages
 
 
     def prent(self, messages):
-        for mes in messages:
-            print(mes['role'], ":", mes['content'])
-            print()
-            print()
-            print("--------------------------------------------------------------------------------------")
-            print()
-            print()
+        if self.verbose:
+            for mes in messages:
+                print(mes['role'], ":", mes['content'])
+                print()
+                print()
+                print("--------------------------------------------------------------------------------------")
+                print()
+                print()
 
-    def modify_prompt(self):
-        self.add_condition()
 
 
     def add_condition(self, place='varq'):
@@ -350,8 +355,8 @@ class LLM:
             self.prompt[place] += 'However, you can choose the variable values as you see fit, e.g. when a_1 and a_2 are mentioned, it may be more reasonable to represent them with a_12, while giving additional values a_3, a_4. This allows us to consider such questions without loss of generality. \n'
             self.prompt[place] += '\n\n2. Restrict the domain of our discussion to those specific scenarios to simplify the problem, especially if it can be leveraged to produce more meaningful variables specific to the scenario. In this case, it will not count towards the maximum amount of variables used. Remember to try to leverage this specific scenario with other possible variables.\n'  """
             
-
-        print("Modified variable question: ", self.prompt[place])
+        if self.verbose:
+            print("Modified variable question: ", self.prompt[place])
 
 
     def get_variable_json(self):
@@ -370,4 +375,12 @@ class LLM:
                     ret.append(tmp)
         ret = {'Variables': ret}
         return ret
+    
+    def log(self, ):
+        with open('log.json', 'w') as f:
+            json.dump(self.dialogues, f, indent=4)
+        with open('results.json', 'w') as f:
+            json.dump(self.results, f, indent=4)
+        with open('prompt.json', 'w') as f:
+            json.dump(self.current_json, f, indent=4)
 
