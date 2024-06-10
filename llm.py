@@ -302,6 +302,7 @@ class LLM:
         # Return the updated list of messages
         return messages
 
+
     def prent(self, messages):
         for mes in messages:
             print(mes['role'], ":", mes['content'])
