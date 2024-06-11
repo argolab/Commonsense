@@ -20,6 +20,8 @@ class LLM:
         with open(prompt, 'r') as f:
             self.prompt = json.load(f)
 
+        self.prompt_og = self.prompt.copy()
+
         self.verbose = verbose
         
         self.current_dialogue = None
@@ -52,12 +54,10 @@ class LLM:
         self.zerojs = []
 
 
-        self.dialogues = {}
-        self.dialogues['mrf'] = {}
-        self.dialogues['cot'] = {}
-        self.dialogues['zero'] = {}
-
-        self.results = {}
+        self.record = {}
+        self.record['mrf'] = {}
+        self.record['cot'] = {}
+        self.record['zero'] = {}
 
         self.error = False
         
@@ -72,11 +72,11 @@ class LLM:
             question += self.prompt['freebins']
         question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
         messages = self.chat(self.get_initial_message(version='zero'), question, update=False).copy()
-        self.dialogues['zero'] = {}
-        self.dialogues['zero']['main dialogue'] = messages.copy()
-        messages, prob = self.get_prob(messages)
-        self.dialogues['zero']['probability dialogue'] = messages.copy()
-        self.results['zero'] = prob.tolist()
+        self.record['zero'] = {}
+        self.record['zero']['main dialogue'] = messages.copy()
+        messages, prob = self.get_prob(messages[-1]['content'])
+        self.record['zero']['probability dialogue'] = messages.copy()
+        self.record['zero']['probability'] = prob.tolist()
         return prob
 
 
@@ -85,25 +85,28 @@ class LLM:
 
 
     def get_cot(self, sequences=None):
-        if 'cot' not in self.dialogues or 'main dialogue' not in self.dialogues['cot']:
+        if 'cot' not in self.record or 'main dialogue' not in self.record['cot']:
             self.button(sequences=sequences, js=False)
         
 
         question = self.question['Text']
         question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
-        messages = self.chat(self.dialogues['cot']['main dialogue'], question, update=False).copy()
-        self.dialogues['cot']['main dialogue'] = messages.copy()
-        short_mes = messages[:1] + messages[-2:]
-        latest, prob = self.get_prob(short_mes)
-        self.dialogues['cot']['probability dialogue'] = latest.copy()
-        self.results['cot'] = prob.tolist()
+        messages = self.chat(self.record['cot']['main dialogue'], question, update=False).copy()
+        self.record['cot']['main dialogue'] = messages.copy()
+        #short_mes = messages[:1] + messages[-2:]
+        latest, prob = self.get_prob(messages[-1]['content'])
+        self.record['cot']['probability dialogue'] = latest.copy()
+        self.record['cot']['probability'] = prob.tolist()
         return prob
 
 
-    def get_prob(self, messages):
+    def get_prob(self, message):
 
-        messages = messages.copy()
-        messages.append({"role": "user", "content": self.prompt['getprob']})
+        messages = []
+        messages.append({"role": "system", "content": self.prompt['getprob']})
+        messages.append({"role": "user", "content": self.prompt['prob_example_us']})
+        messages.append({"role": "assistant", "content": self.prompt['prob_example_as']})
+        messages.append({"role": "user", "content": message})
         response = self.client.chat.completions.create(
             model=self.prob_model,
             response_format={ "type": "json_object" },
@@ -113,7 +116,7 @@ class LLM:
         assistant_message = response.choices[0].message.content
         messages.append({"role": "assistant", "content": assistant_message})
 
-        latest = messages.copy()[-2:]
+        latest = messages.copy()
 
         try:
             js = json.loads(assistant_message)
@@ -167,8 +170,9 @@ class LLM:
         js, query = self.button()
         cot = self.get_cot()
         zero = self.get_zero()
-        self.log()
-        return js, query, cot, zero
+        #self.log()
+
+        return self.record
     
 
     def button(self, sequences=None, question=True, js=True, linear=False):
@@ -177,26 +181,28 @@ class LLM:
         for dialogue in sequences[0]:
             messages = self.continue_from_last(self.prompt[dialogue])
 
-        self.dialogues['mrf']['main dialogue'] = self.get_current_dialogue()
-        self.dialogues['cot']['main dialogue'] = self.get_current_dialogue()
+        self.record['mrf']['main dialogue'] = self.get_current_dialogue()
+        self.record['cot']['main dialogue'] = self.get_current_dialogue()
         if js:
-            self.dialogues['mrf']['json dialogue'] = []
+            self.record['mrf']['json dialogue'] = []
         
         for dialogue in sequences[1]:
             if dialogue is not None:
                 messages = self.continue_from_last(self.prompt[dialogue], update=linear)
-                self.dialogues['cot']['main dialogue'] += messages[-2:].copy()
-                self.dialogues['mrf'][dialogue] = messages.copy()
+                self.record['cot']['main dialogue'] += messages[-2:].copy()
+                self.record['mrf'][dialogue] = messages.copy()
             if js:
                 messages = self.get_json(new_message=messages[-1]['content'])
-                self.dialogues['mrf']['json dialogue'] += messages[-2:].copy()
+                self.record['mrf']['json dialogue'] += messages[-2:].copy()
         if not js:
             return
         if js and question and self.question:
             messages = self.get_json(new_message=self.question['Text'], query=True)
-            self.dialogues['mrf']['json dialogue'] += messages[-2:].copy()
+            self.record['mrf']['json dialogue'] += messages[-2:].copy()
             query_q = messages[-1]['content']
-            self.dialogues['mrf']['query'] = messages.copy()
+            self.record['mrf']['query dialogue'] = messages.copy()
+            self.record['mrf']['query'] = query_q
+            self.record['mrf']['json'] = self.current_json
             return self.current_json, query_q
         return self.current_json, None
 
@@ -320,19 +326,34 @@ class LLM:
                 print()
 
 
+    def set_question(self, question):
+        self.question = question
+        self.add_condition()
+
 
     def add_condition(self, place='varq'):
 
         exist = False
-        for check in ['Target', 'Condition']:
-            if check in self.question and len(self.question[check]) > 0:
-                exist = True
-        if not exist:
-            return
+        #for check in ['Target', 'Condition']:
+        #    if check in self.question and len(self.question[check]) > 0:
+        #        exist = True
+        #if not exist:
+        #    return
+
         text = self.question['Text']
         if place not in self.prompt:
             raise ValueError('No suggested condition insertion place in prompt')
         #self.prompt[place] += ' However, you must also include the following variable and possibly some values (you can add more): \n'
+
+        city_name = "United States"
+        for cond in self.question['Condition']:
+            if cond['Name'] == 'City':
+                city_name = cond['Value']
+                break
+
+        for key, promp in self.prompt.items():
+            if key != 'json_dialogue':
+                self.prompt[key] = promp.replace('United States', city_name)
         
         if place == 'initial_message':
             self.prompt[place][0]['content'] += ' Specifically, we would like to be able to answer the question: ' + text
@@ -376,11 +397,3 @@ class LLM:
         ret = {'Variables': ret}
         return ret
     
-    def log(self, ):
-        with open('log.json', 'w') as f:
-            json.dump(self.dialogues, f, indent=4)
-        with open('results.json', 'w') as f:
-            json.dump(self.results, f, indent=4)
-        with open('prompt.json', 'w') as f:
-            json.dump(self.current_json, f, indent=4)
-

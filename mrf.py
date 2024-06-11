@@ -6,13 +6,15 @@ import tqdm
 
 
 class Brute(nn.Module):
-    def __init__(self, ):
+    def __init__(self, verbose=False):
         super(Brute, self).__init__()
         
         self.total_pos = []
         self.optim = None
 
         self.w0 = 0
+
+        self.verbose = verbose
 
 
         self.universe = None
@@ -86,7 +88,6 @@ class Brute(nn.Module):
         if type(constraints) != list:
             print("ERROR: Constraints must be a list")
             return
-    
         for entry in constraints:
             condition = self.translate(entry['Condition']) if 'Condition' in entry else None
             if 'Target' not in entry:
@@ -111,8 +112,6 @@ class Brute(nn.Module):
                 self.add_constraint(target, condition, entry['Probability'])
 
 
-
-
     def json_vars(self, json):
         """
         Add variables from a dictionary containing the variable names and their possible values"""
@@ -130,7 +129,8 @@ class Brute(nn.Module):
             self.var_dict[name] = j
             self.var_dict[j] = name
         self.N = len(self.total_pos)
-        self.vars_print()
+        if self.verbose:
+            self.vars_print()
 
     def vars_print(self):
         """
@@ -172,17 +172,6 @@ class Brute(nn.Module):
         bot = entropy_each.sum()
         px = (entropy_each / bot)
         return 1 * (px * torch.log(px)).sum()
-        
-    
-    def calculate_potential(self, x):
-        """
-        For inference, calculate the sum of potential function"""
-        denom = self.build_denom(x)
-        matching = denom.unsqueeze(1) * self.mask
-        fire = (matching == self.features_rem).all(dim=-1).float()
-        entropy_each = fire * self.weights
-        entropy_each = torch.exp(entropy_each.sum(dim=-1))
-        return entropy_each.sum()
         
         
     def add_var(self, possible):
@@ -293,6 +282,9 @@ class Brute(nn.Module):
         # tar and cond should have the same format, a list of total possible values
         # equality only
         for i, (tar, cond, prob) in enumerate(self.constraints):
+            if i in [3]:
+                continue
+            
             condition = self.get_mask(cond)
             target = self.get_mask(tar, condition=condition)
 
@@ -318,27 +310,26 @@ class Brute(nn.Module):
             if type(prob) == float:
                 prob = [prob]
             if len(prob) == 2:
-                print(i)
                 prob = [(prob[0] + prob[1])/2]
             self.constraints_values.append(prob)
+
         #print(features)
         self.targets = torch.stack(self.targets, dim=0)
         self.conditions = torch.stack(self.conditions, dim=0)
         self.features_firing = torch.stack(feature_firing, dim=0).t()
-        print(self.constraints_values)
         self.constraints_values = torch.tensor(self.constraints_values).squeeze()
         
         self.num_features = self.features_firing.shape[1]
         self.weights = nn.Parameter(torch.randn(self.num_features))
         self.optim = torch.optim.SGD(self.parameters(), lr=0.1)
 
-
-        print('-----------------------------------------------')
-        print("Finished building")
-        #self.vars_print()
-        print("Features: ", self.num_features)
-        print("Constraints: ", len(self.constraints))
-        print('-----------------------------------------------')
+        if self.verbose:
+            print('-----------------------------------------------')
+            print("Finished building")
+            #self.vars_print()
+            print("Features: ", self.num_features)
+            print("Constraints: ", len(self.constraints))
+            print('-----------------------------------------------')
         return features
 
 
@@ -349,7 +340,8 @@ class Brute(nn.Module):
 
         self.losses = []
         self.train()
-        for n in tqdm.tqdm(range(epochs)):
+        #for n in tqdm.tqdm(range(epochs)):
+        for n in range(epochs):
             self.optim.zero_grad()
 
             firing = torch.exp((self.features_firing * self.weights).sum(dim=-1))
@@ -376,10 +368,13 @@ class Brute(nn.Module):
             loss.backward()
             self.optim.step()
             self.losses.append(loss.detach())
-            if n % (epochs // 5) == 0 or n == epochs - 1:
-                tmp = targets / conditions - self.constraints_values
-                print("Loss: ", loss, torch.abs(tmp).mean().item(), torch.abs(tmp).max().item(), torch.abs(tmp).min().item())
-                #print("Violated: ", violated, " out of ", tot)
+            if self.verbose:
+                if n % (epochs // 10) == 0 or n == epochs - 1:
+                    tmp = torch.abs(targets / conditions - self.constraints_values)
+                    print("Loss: ", loss, tmp.max())
+                    # print the top 5 constraints with the highest loss
+                    print(tmp.topk(5))
+                    #print("Violated: ", violated, " out of ", tot)
 
 
     # ---------------------------Below are implementations for API reference------------------------------------------------------------------
@@ -454,6 +449,7 @@ class Brute(nn.Module):
         return self.val_dict[var][val]
     
 
+
     def marg(self, target=-1, condition=None):
         """
         Calculate the marginal probability of the target given the condition (optional)
@@ -475,13 +471,13 @@ class Brute(nn.Module):
         cond = self.translate(proc_cond)
         #print("Condition: ", cond, proc_cond)
 
-        ret = torch.zeros(self.total_pos[proc_tar])
+        ret = []
         tot = 0
         for i in range(self.total_pos[proc_tar]):
             tar_tmp = [{"Name": proc_tar, "Value": [i]}]
             tar = self.translate(tar_tmp)
-            ret[i] = self.infer(tar, cond).item()
-            tot += ret[i]
+            ret.append(self.infer(tar, cond).item())
+            tot += ret[-1]
         if abs(tot - 1) > 0.001:
             print("[Error]marginal do not add to 1: ", tot)
         return ret
@@ -508,11 +504,11 @@ class Brute(nn.Module):
                         condition = None
                     else:
                         condition = entry['Condition']
-                        print(condition)
                     ret.append(self.marg(target=query_target_var, condition=condition))
 
         if len(ret) == 1:
-            return ret[0]
+            ret = ret[0]
+
         return ret
 
             

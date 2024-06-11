@@ -38,51 +38,53 @@ class DatasetQ():
         print(self.dat[item].unique())
 
 
-    def marg(self, query_json, array=True):
+    def marg(self, query_json, target_values=None):
 
+        if type(query_json) == str:
+            query_json = json.loads(query_json)
         query_json = query_json.copy()
 
-        tar = query_json['Target'][0]['Name']
+
+        tar = query_json['Target']['Name']
+        #target_values = query_json['Target'][0]['Value']
         cond = query_json['Condition']
 
-        uniques = self.dat[tar].unique()
+        if not target_values:
+            target_values = ["<$50", "$51-$100", "$101-$200", "$201-$500", "$500+"]
+
 
         tmp = self.dat.copy()
+        # print number of rows in the dataset
+        tmp = tmp.dropna(subset=[tar])
+        city = None
 
         for c in cond:
             variable_name = c['Name']
             variable_value = c['Value']
+            if variable_name == 'City':
+                city = variable_value
+                continue
             # filter dataset to get only the rows that satisfy the condition
+            if type(variable_value) != list:
+                variable_value = [variable_value]
             tmp = tmp[tmp[variable_name].isin(variable_value)]
-        
-        if self.verbose:
-            print(tmp['room_type'].unique())
-
+            # drop nan columns
+            #tmp = tmp.dropna(subset=[variable_name])
+        print(city, " : ", len(tmp))
 
         tot = 0
         
-        ret = {}
-        names = []
         prob = []
 
-        for u in sorted(uniques): # suppose we'll always use sorted to align the values CHECK IF THIS ALIGNS WITH OUR SCHEME
+        for u in target_values: # suppose we'll always use sorted to align the values CHECK IF THIS ALIGNS WITH OUR SCHEME
             percentage = (tmp[tar] == u).mean()
-            names.append(u)
+            #names.append(u)
             prob.append(percentage)
-            print(u, percentage)
             tot += percentage
         if abs(tot - 1) > 0.01:
             print("[Error]marginal do not add to 1: ", tot)
 
-        ret['Value'] = names
-        ret['Probability'] = prob
-
-        query_json['Ground'] = ret
-
-        if array:
-            return np.array(prob), np.array(names)
-        else:
-            return query_json
+        return prob
 
 
 class question_translate():
@@ -115,6 +117,6 @@ class question_translate():
             json.dump(js, open(out_path, 'w'), indent=2)
         else:
             #out_path = js_path[:-5] + 'q.json'
-            json.dump(js, open('./example_files/output.json', 'w'), indent=2)
+            json.dump(js, open(js_path, 'w'), indent=2)
 
         return text
