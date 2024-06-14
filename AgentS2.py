@@ -395,7 +395,8 @@ class AgentS2():
                     new_cond = [{'Name': cond, 'Value': [cond_val]}]
                 question_js = {'Target': new_tar, 'Condition': new_cond}
                 question_js = self.populate_constraint_prob(question_js, add_city, conf)
-                self.constraints_rec.append(question_js)
+                if question_js is not None:
+                    self.constraints_rec.append(question_js)
 
 
         self.log()

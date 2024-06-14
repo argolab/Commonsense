@@ -78,6 +78,8 @@ class Brute(nn.Module):
             print("ERROR: Constraints must be a list")
             return
         for entry in constraints:
+            if entry is None:
+                continue
             condition = self.translate(entry['Condition']) if 'Condition' in entry else None
             if '(Deprecated)Target' not in entry:
                 if self.batch_target not in entry or self.batch_probability not in entry:
