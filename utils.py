@@ -45,8 +45,8 @@ class DatasetQ():
         query_json = query_json.copy()
 
 
-        tar = query_json['Target']['Name']
-        #target_values = query_json['Target'][0]['Value']
+        tar = query_json['Target'][0]['Name']
+        
         cond = query_json['Condition']
 
         if not target_values:
@@ -58,25 +58,28 @@ class DatasetQ():
         tmp = tmp.dropna(subset=[tar])
         city = None
 
+        #print(city, " : ", len(tmp))
         for c in cond:
             variable_name = c['Name']
             variable_value = c['Value']
             if variable_name == 'City':
                 city = variable_value
                 continue
+            #print(tmp[variable_name].unique())
             # filter dataset to get only the rows that satisfy the condition
             if type(variable_value) != list:
                 variable_value = [variable_value]
+            #print(tmp[variable_name].describe())
             tmp = tmp[tmp[variable_name].isin(variable_value)]
+            #print(variable_name, variable_value)
             # drop nan columns
             #tmp = tmp.dropna(subset=[variable_name])
-        print(city, " : ", len(tmp))
-
+        #print(city, " : ", len(tmp))
         tot = 0
         
         prob = []
 
-        for u in target_values: # suppose we'll always use sorted to align the values CHECK IF THIS ALIGNS WITH OUR SCHEME
+        for u in target_values:
             percentage = (tmp[tar] == u).mean()
             #names.append(u)
             prob.append(percentage)
@@ -92,7 +95,7 @@ class question_translate():
         self.client = OpenAI()
         self.prompt = prompt
         self.model = 'gpt-3.5-turbo-0125'
-        
+
     
     def get_text(self, js_question):
         tmp = self.prompt.copy()

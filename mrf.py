@@ -27,8 +27,8 @@ class Brute(nn.Module):
         self.val_dict = dict()
         self.num_features = 0
 
-        self.batch_target = "BatchTarget"
-        self.batch_probability = "BatchProbability"
+        self.batch_target = "Target"
+        self.batch_probability = "Probability"
 
 
     def forward(self, x):
@@ -42,17 +42,6 @@ class Brute(nn.Module):
         Set the weight for the entropy term, positive for maximization
         """
         self.w0 = w0
-
-
-    def update_white(self, data):
-        js = json.dumps(data)
-        # check if 'Batch ' is in the json
-        if 'Batch ' in js:
-            self.batch_target = 'Batch Target'
-            self.batch_probability = 'Batch Probability'
-        else:
-            self.batch_target = 'BatchTarget'
-            self.batch_probability = 'BatchProbability'
 
     
     def from_json(self, entire_json=None, vars=None, constraints=None):
@@ -70,7 +59,7 @@ class Brute(nn.Module):
                 data = json.loads(entire_json)
             else:
                 data = entire_json
-            self.update_white(data)
+            #self.update_white(data)
             self.json_vars(data['Variables'])
             self.json_constraints(data['Constraints'])
         else:
@@ -90,12 +79,25 @@ class Brute(nn.Module):
             return
         for entry in constraints:
             condition = self.translate(entry['Condition']) if 'Condition' in entry else None
-            if 'Target' not in entry:
+            if '(Deprecated)Target' not in entry:
                 if self.batch_target not in entry or self.batch_probability not in entry:
                     print("ERROR: Invalid constraint type 1", entry)
                     continue
-                batch_target = self.batch_translate(entry[self.batch_target])
+                batch_target, full = self.batch_translate(entry[self.batch_target])
+                if full:
+                    # sum of all probabilities should be 1
+                    tot = 0
+                    for prob in entry[self.batch_probability]:
+                        tot += prob
+                    if abs(tot - 1) > 0.05:
+                        print("[Error]marginal do not add to 1: ", tot, " from ", entry[self.batch_probability], batch_target)
+                        continue
+                        entry[self.batch_probability] = [prob / tot for prob in entry[self.batch_probability]]
+                        print("Normalized to ", entry[self.batch_probability])
                 if batch_target is None:
+                    continue
+                if len(batch_target) != len(entry[self.batch_probability]):
+                    print("ERROR: length of target does not match probability", entry)
                     continue
                 for target, prob in zip(batch_target, entry[self.batch_probability]):
                     if target is None:
@@ -105,7 +107,7 @@ class Brute(nn.Module):
                     #if entry[self.batch_target][0]['Name'] == 'Price Ranges':
                     #    print(target, condition, prob)
             else:
-                target = self.translate(entry['Target'])
+                target = self.translate(entry['(Deprecated)Target'])
                 if target is None:
                     print("ERROR: invalid constraint type 3", entry)
                     continue
@@ -250,20 +252,26 @@ class Brute(nn.Module):
     def batch_translate(self, inputs):
         ret = [-1 for i in range(self.N)]
         rets = []
+        full = False
         for input in inputs:
             var_ind = self.var_name2ind(input['Name'])
             if var_ind == -1:
+                print("Target Variable not found in batch translate", input['Name'])
                 return None
+            if len(input['Value']) == self.total_pos[var_ind]:
+                full = True
             for val in input['Value']:
                 possible_values = []
                 val_ind = self.val_name2ind(var_ind, val)
                 if val_ind == -1:
+                    #print(input['Name'], val)
+                    print("Target Value not found in batch translate")
                     return None
                 possible_values.append(val_ind)
                 tmp = ret.copy()
                 tmp[var_ind] = tuple(possible_values)
                 rets.append(tmp)
-        return rets
+        return rets, full
 
 
 
@@ -282,8 +290,6 @@ class Brute(nn.Module):
         # tar and cond should have the same format, a list of total possible values
         # equality only
         for i, (tar, cond, prob) in enumerate(self.constraints):
-            if i in [3]:
-                continue
             
             condition = self.get_mask(cond)
             target = self.get_mask(tar, condition=condition)
@@ -293,7 +299,7 @@ class Brute(nn.Module):
 
 
             if (tar_tup, cond_tup) in constraints.keys():
-                print("ERROR: Duplicate constraints with ", constraints[(tar_tup, cond_tup)])
+                print("ERROR: Duplicate constraints with ", constraints[(tar_tup, cond_tup)], tar, cond, prob)
                 continue
             else:
                 constraints[(tar_tup, cond_tup)] = i
@@ -309,13 +315,16 @@ class Brute(nn.Module):
 
             if type(prob) == float:
                 prob = [prob]
-            if len(prob) == 2:
-                prob = [(prob[0] + prob[1])/2]
+            elif type(prob) == int:
+                prob = [prob]
+            #if len(prob) == 2:
+            #    prob = [(prob[0] + prob[1])/2]
             self.constraints_values.append(prob)
 
         #print(features)
         self.targets = torch.stack(self.targets, dim=0)
         self.conditions = torch.stack(self.conditions, dim=0)
+        self.top_bottom = torch.stack([self.targets, self.conditions], dim=0)
         self.features_firing = torch.stack(feature_firing, dim=0).t()
         self.constraints_values = torch.tensor(self.constraints_values).squeeze()
         
@@ -337,43 +346,44 @@ class Brute(nn.Module):
 
         """
         Training"""
-
         self.losses = []
         self.train()
+        if self.verbose:
+            loop = tqdm.tqdm(range(epochs), desc="Training Progress")
+        else:
+            loop = range(epochs)
+        loss_ent = 0
         #for n in tqdm.tqdm(range(epochs)):
-        for n in range(epochs):
+        for n in loop:
             self.optim.zero_grad()
+            
 
             firing = torch.exp((self.features_firing * self.weights).sum(dim=-1))
 
-            tar_firing = (self.targets * firing)
-            cond_firing = (self.conditions * firing)
+            top_bot_firing = (self.top_bottom * firing)
+            top_bot = top_bot_firing.sum(dim=-1)
 
-
-            targets = tar_firing.sum(dim=-1)
-            conditions = cond_firing.sum(dim=-1)
-
-            loss = (targets / conditions - self.constraints_values)
+            loss = top_bot[0]/top_bot[1] - self.constraints_values
             # cut out ones with loss less than 0.02
             if not slack:
                 loss = loss.pow(2).sum()
             else:
                 loss = loss[torch.abs(loss) > 0.01].pow(2).sum()
 
-
-            #print("weights: ", self.weights)
             if self.w0 != 0:
-                loss += self.w0 * self.calculate_entropy()
-            #loss += 0.1 * self.weights.pow(2).mean()
+                loss_ent = self.w0 * self.calculate_entropy()
+                loss += loss_ent
+                loss_ent = loss_ent.detach().item()
+
             loss.backward()
             self.optim.step()
             self.losses.append(loss.detach())
             if self.verbose:
                 if n % (epochs // 10) == 0 or n == epochs - 1:
-                    tmp = torch.abs(targets / conditions - self.constraints_values)
-                    print("Loss: ", loss, tmp.max())
-                    # print the top 5 constraints with the highest loss
-                    print(tmp.topk(5))
+                    tmp = top_bot[0]/top_bot[1] - self.constraints_values
+                    if loss_ent != 0:
+                        print("Entropy: ", loss_ent)
+                    print("Loss: ", loss, tmp.topk(5))
                     #print("Violated: ", violated, " out of ", tot)
 
 
@@ -495,7 +505,7 @@ class Brute(nn.Module):
             return 'Invalid query'
         for entry in query['Queries']:
             query_target_var = -1
-            for check in ['Target', self.batch_target]:
+            for check in ['(Deprecated)Target', self.batch_target]:
                 if check in entry:
                     for target in entry[check]:
                         query_target_var = target['Name']

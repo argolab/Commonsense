@@ -1,0 +1,14 @@
+{
+    "Text": "What is the average price of an Airbnb listing in Broward County, FL hosted by someone with less than 1 year of experience?",
+    "Target": [
+        {
+            "Name": "Price"
+        }
+    ],
+    "Condition": [
+        {
+            "Name": "Host Experience",
+            "Value": ["<1 year"]
+        }
+    ]
+}

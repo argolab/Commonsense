@@ -44,7 +44,8 @@ class LLM:
             self.add_condition()
 
         if sequences is None:
-            self.sequences = [['binq', 'brainq', 'broadq', 'moreq', 'varq'], [None, 'margq', 'pricecondq', 'interactq']]
+            #self.sequences = [['binq', 'brainq', 'broadq', 'moreq', 'varq'], [None, 'margq', 'pricecondq', 'interactq']]
+            self.sequences = [['binq', 'brainq', 'broadq', 'varq'], [None, 'margq', 'pricecondq', 'interactq']]
         else:
             self.sequences = sequences
 
@@ -70,7 +71,7 @@ class LLM:
             question += '\n' + self.prompt['bins']
         else:
             question += self.prompt['freebins']
-        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
+        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value.'
         messages = self.chat(self.get_initial_message(version='zero'), question, update=False).copy()
         self.record['zero'] = {}
         self.record['zero']['main dialogue'] = messages.copy()
@@ -90,7 +91,7 @@ class LLM:
         
 
         question = self.question['Text']
-        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value, not a range.'
+        question += '\n' + 'Provide the probability of each bin for the variable price. Give a definite value.'
         messages = self.chat(self.record['cot']['main dialogue'], question, update=False).copy()
         self.record['cot']['main dialogue'] = messages.copy()
         #short_mes = messages[:1] + messages[-2:]
@@ -212,9 +213,12 @@ class LLM:
         messages = self.get_json_dialogue()
         if new_message:
             if not query:
-                messages.append({"role": "user", "content": '[real][record] ' + new_message})
+                if not self.current_json:
+                    messages.append({"role": "user", "content": '[real][Variables] ' + new_message})
+                else:
+                    messages.append({"role": "user", "content": '[real][Constraints] ' + new_message})
             else:
-                messages.append({"role": "user", "content": '[real][query] ' + new_message})
+                messages.append({"role": "user", "content": '[real][Queries] ' + new_message})
 
 
         response = self.client.chat.completions.create(
@@ -331,7 +335,7 @@ class LLM:
         self.add_condition()
 
 
-    def add_condition(self, place='varq'):
+    def add_condition(self, place='varq', additional='broadq'):
 
         exist = False
         #for check in ['Target', 'Condition']:
@@ -355,12 +359,14 @@ class LLM:
             if key != 'json_dialogue':
                 self.prompt[key] = promp.replace('United States', city_name)
         
+        self.prompt[additional] += " For example, how can the variables to express and answer the question: " + text + " You should express it with ONLY the variables clearly mentioned in the question without extra assumptions. However, think about how the other variables, serving as latent variables, could help the model make better estimates. "
+        
         if place == 'initial_message':
             self.prompt[place][0]['content'] += ' Specifically, we would like to be able to answer the question: ' + text
         else:
             #self.prompt[place] += ' Specifically, we would like to be able to answer the question: ' + text
-            self.prompt[place] += '\nAdditionally without loss of generality, we would like to be able to answer questions such as: ' + text
-            self.prompt[place] += '\nMake sure that the updated variables can express such questions with existing variables. '
+            self.prompt[place] += '\nAdditionally without loss of generality, we would like to be able to answer: ' + text
+            self.prompt[place] += '\nMake sure that the variables chosen can express this question with existing variable values clearly. Explain how the variables chosen can express the question. '
             """ self.prompt[place] += ' For each of the mentioned conditions, you could either\n' + '\n1. Include variables like: \n'
 
 

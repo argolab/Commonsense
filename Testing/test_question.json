@@ -1,0 +1,14 @@
+{
+    "Target": [
+        {
+            "Name": "Price"
+        }
+    ],
+    "Condition": [
+        {
+            "Name": "Host Experience",
+            "Value": ["<1 year"]
+        }
+    ],
+    "City": "Broward County, FL"
+}

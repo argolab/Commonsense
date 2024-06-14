@@ -1,0 +1,128 @@
+{
+    "cons_trans": [
+        {
+            "role": "system",
+            "content": "You are a transcriber tasked to convert an interview into JSON and provide querying messages. The interview is on analyzing Airbnb price. You will transcribe interview into JSON \"Constraints\" using given variables definition. Variables provided specify the variable \"Name\" and their possible \"Value\". The naming may change across dialogues but use ONLY the variable names in the CURRENT message. \nConstraints entries have two parts: \"Target\" and \"Condition\". They consist of a list of only \"Name\", representing P(Target|Condition).Note:\nUse only the variable names defined inside the message. The variable definitions do not carry over. Generate JSON without line breaks."
+        },
+        {
+            "role": "user",
+            "content": "[Schema] {\"Variables\":[{\"Name\":\"Number of Bedrooms\",\"Value\":[\"0/1 bedroom\",\"2 bedrooms\",\"3 bedrooms\",\"4+ bedrooms\"]},{\"Name\":\"Number of Bathrooms\",\"Value\":[\"0/1 bathroom\",\"2 bathrooms\",\"3+ bathrooms\"]},{\"Name\":\"Host Experience\",\"Value\":[\"<1 year\",\"1-5 years\",\"5-10 years\",\"10+ years\"]},{\"Name\":\"Superhost\",\"Value\":[\"Yes\",\"No\"]},{\"Name\":\"Room Type\",\"Value\":[\"Entire home/apt\",\"Private room\",\"Shared room\"]},{\"Name\":\"Number of Beds\",\"Value\":[\"0/1 bed\",\"2 beds\",\"3 beds\",\"4+ beds\"]},{\"Name\":\"Review Score\",\"Value\":[\"<4.3\",\"4.3-4.8\",\"4.9+\"]},{\"Name\":\"Price\",\"Value\":[\"<$50\",\"$51-$100\",\"$101-$200\",\"$201-$500\",\"$500+\"]}]}\n\n[Transcribe] Let's reason through the problem carefully. Here's a step-by-step breakdown:\n\n### Step-by-Step Reasoning\n\n**Review Score-related Interactions:**\n- **Superhost**: Higher review scores are likely correlated with Superhosts because Superhosts are typically experienced hosts with better amenities and service.\n- **Host Experience**: A more experienced host might be expected to have better review scores due to refined hosting strategies and learning from past experiences.\n\n**Superhost-related Interactions:**\n- **Price**: Superhosts might charge higher prices due to the premium service perception.\n- **Review Score**: As mentioned, Superhosts are likely to have higher review scores.\n- **Host Experience**: Superhosts are likely to be more experienced.\n### Summary of Relationships:\n- P(Review Score|Host Experience)\n- P(Review Score|Superhost)\n- P(Superhost|Host Experience)\n- P(Price|Room Type)\n- P(Number of Beds|Number of Bedrooms)\n- P(Price|Number of Bedrooms)\n- P(Superhost|Host Experience)"
+        },
+        {
+            "role": "assistant",
+            "content": "{\"Constraints\":[{\"Target\":[{\"Name\":\"Review Score\"}],\"Condition\":[{\"Name\":\"Host Experience\"}]},{\"Target\":[{\"Name\":\"Review Score\"}],\"Condition\":[{\"Name\":\"Superhost\"}]},{\"Target\":[{\"Name\":\"Superhost\"}],\"Condition\":[{\"Name\":\"Host Experience\"}]},{\"Target\":[{\"Name\":\"Price\"}],\"Condition\":[{\"Name\":\"Room Type\"}]},{\"Target\":[{\"Name\":\"Number of Beds\"}],\"Condition\":[{\"Name\":\"Number of Bedrooms\"}]},{\"Target\":[{\"Name\":\"Price\"}],\"Condition\":[{\"Name\":\"Number of Bedrooms\"}]},{\"Target\":[{\"Name\":\"Superhost\"}],\"Condition\":[{\"Name\":\"Host Experience\"}]}]}"
+        }
+    ],
+    "cons_prop": [
+        {
+            "role": "system",
+            "content": "You are a statistician interviewing for a market analytics position. You are known for your ability to identify structures and relationships among data variables using commonsense. \nA set of variables are given to analyze the Airbnb market in 2023-2024 in United States. Always refer to the variables with given name. Propose important relationships among the variables. Start by considering potential options. They do not have to involve price. Make sure all variables are used. Then pick out 6~10 that are meaningful. For simplicity, only consider relationships involving only two variables. \nWe are interested in questions like [INSERTQUESTION]\nUse Intuition: Rely on commonsense to make broad generalizations, since data will not be available during the interview. \nReasoning First: Reason through the problem concisely before providing structured answers in conditional probability notation P(Y|X).\nHint: To model Y considering X and Z in X-Y-Z, the relationship between X and Z may help. In other words, relationships between variables other than target can be helpful or even crucial. \n"
+        },
+        {
+            "role": "user",
+            "content": "Let's analyze the price of Airbnb listings in United States. Here are the variables: \n"
+        }
+    ],
+    "zero": [
+        {
+            "role": "system",
+            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024 using commonsense. First understand the problem and devise a plan to solve the problem. Then, carry out the plan and solve the problem concisely step-by-step. In the end, present your answer in a short sentence.'"
+        }
+    ],
+    "question_text": [
+        {
+            "role": "system",
+            "content": "Translate the provided JSON into question in English about Airbnb listings. We would like to get the distribution of the Target variable Value over the given conditions, conditioned on the variable Value in Condition. 'Other' denote the Value not conditioned on, you could it for disambiguating the conditions. "
+        },
+        {
+            "role": "user",
+            "content": "{\"Target\": [{\"Name\": \"Price\", \"Value\": [\"<$50\", \"$51-$100\", \"$101-$200\", \"$201-$500\", \"$500+\"]}], \"Condition\": [{\"Name\": \"Accommodates\", \"Value\": [\"3\"]}, {\"Name\": \"City\", \"Value\": [\"Newark, NJ\"]}]}"
+        },
+        {
+            "role": "assistant",
+            "content": "Estimate the nightly price of an Airbnb listing in Newark, NJ that can accomodate at most 3 people."
+        },
+        {
+            "role": "user",
+            "content": "{\"Target\": [{\"Name\": \"Superhost\", \"Value\": [\"Yes\", \"No\"]}], \"Condition\": [{\"Name\": \"Amenities\", \"Value\": [\"Standard (Basic + Air Conditioning, Washer/Dryer)\"], \"Other\": [\"Basic (WiFi, Kitchen)\", \"Luxury (Standard + Pool, Hot Tub, Gym)\"]}, {\"Name\": \"City\", \"Value\": [\"Los Angeles, CA\"]}]}"
+        },
+        {
+            "role": "assistant",
+            "content": "What is the likelihood that an Airbnb host with less than 1 year of experience is a superhost in Los Angeles, CA, if standard amenities are offered, e.g. with kitchen, AC, washer but not luxury features like pools?\n"
+        }
+    ],
+    "get_prob": [
+        {
+            "role": "system",
+            "content": "Translate the probability into JSON. Only give the probability of the final answer."
+        },
+        {
+            "role": "user",
+            "content": "\n- **$0 - $50**: This range might be rare.\n- **$51 - $100**: This range could include a significant portion of listings.\n- **$101 - $200**: Likely mid-tier listings.\n- **$201 - $400**: Likely for high-end listings.\n- $401 and above: Likely rare.\nWe can estimate the probabilities as follows:\n- $0 - $50: 10% - Rare, but possible in less desirable locations.\n- $51 - $100: 35% - Common for budget travelers and less expensive cities.\n- $101 - $200: 40% - Likely the most common range.\n- $201 - $400: 12% - High-end listings in major cities.\n- $401 and above: 3% - Luxury listings.\nSummary:\n- $0 - $50: 10%\n- $51 - $100: 35%\n- $101 - $200: 40%\n- $201 - $400: 12%\n- $401 and above: 3%\n"
+        },
+        {
+            "role": "assistant",
+            "content": "{\"Probability\": [0.10, 0.35, 0.40, 0.12, 0.03]}"
+        }
+    ],
+    "query_trans": [
+        {
+            "role": "system",
+            "content": "You will transcribe a JSON \"Queries\" with given \"Variables\" and a question. \"Variables\" define \"Name\" and \"Value\". \"Queries\" express P(Target|Condition). Give \"Name\" for \"Target\", \"Name\" and \"Value\" for \"Condition\". Multiple \"Condition\" entries express union. If there is no matching \"Condition\", leave it empty as \"Condition\": []. Keep the naming consistent. Do not use line breaks or make additional assumptions beyond variables the question states."
+        },
+        {
+            "role": "user",
+            "content": "[Question] What is Beta if we know that A is 1 or 2 and D is 9?\n[Database] {\"Variables\": [{\"Name\":\"A\",\"Value\":[\"a1\",\"a2\",\"a3\"]},{\"Name\":\"B\",\"Value\":[\"b1\",\"b2\"]},{\"Name\":\"C\",\"Value\":[\"c1\",\"c2\"]}]}"
+        },
+        {
+            "role": "assistant",
+            "content": "{\"Queries\":[{\"Target\":[{\"Name\":\"B\"}],\"Condition\":[{\"Name\":\"A\",\"Value\":[\"a1\",\"a2\"]}]}]}"
+        }
+    ],
+    "var_trans": [
+        {
+            "role": "system",
+            "content": "You will transcribe conversations during an interview into JSON. Provide \"Variables\" definition, each entry containing \"Name\" and \"Value\". Do not use line breaks. If the names are vague like \"basic\", include few more words."
+        },
+        {
+            "role": "user",
+            "content": "I think there should be: \nA with value a1, a2, a3+. \n(a3+ would mean larger than 3).\n B with value b1, b2\n C with value c1, c2. \n"
+        },
+        {
+            "role": "assistant",
+            "content": "{\"Variables\":[{\"Name\":\"A\",\"Value\":[\"a1\",\"a2\",\"a3+: larger than 3\"]},{\"Name\":\"B\",\"Value\":[\"b1\",\"b2\"]},{\"Name\":\"C\",\"Value\":[\"c1\",\"c2\"]}]}"
+        }
+    ],
+    "eval_question_text": [
+        {
+            "role": "system",
+            "content": "Translate the provided JSON data into a question sentence. Do not make any assumptions beyond the variables."
+        },
+        {
+            "role": "user",
+            "content": "{\"Target\": [{\"Name\": \"Price\"}], \"Condition\": [{\"Name\": \"Max Accommodates\", \"Value\": [\"3\"]}, {\"Name\": \"City\", \"Value\": [\"Newark, NJ\"]}]}"
+        },
+        {
+            "role": "assistant",
+            "content": "What is the nightly price of an Airbnb listing in Newark, NJ that can accomodate at most 3 people?"
+        },
+        {
+            "role": "user",
+            "content": "{\"Target\": [{\"Name\": \"Superhost\", \"Value\": [\"Yes\"]}], \"Condition\": [{\"Name\": \"Host Experience\", \"Value\": [\"<1 year\"]}, {\"Name\": \"City\", \"Value\": [\"Los Angeles, CA\"]}]}"
+        },
+        {
+            "role": "assistant",
+            "content": "What is the likelihood that an Airbnb host with less than 1 year of experience is a superhost in Los Angeles, CA?"
+        }
+    ],
+    "var_prop": [
+        {
+            "role": "system",
+            "content": "You are a statistician interviewing for a market analytics position.\nYou are known for your ability to identify structures and relationships among data variables using commonsense.\nYou are asked to analyze the nightly price of Airbnb listings in 2023-2024 in United States. Now you are asked to propose variables to consider in analysis. For simplicity, variable price is already divided into ranges for you: [PRICEBINS]\n\nAdvice: 1. To model A considering B in graph A-B, using a latent variable C to model B (A-B-C) helps with the estimation as it helps understand B. \n2. To model Y considering X and Z in X-Y-Z, it helps to think about the relationship between X and Z.\nIn other words, structures not involving price is also helpful. \n\nUse Intuition: Rely on commonsense to make broad generalizations. \nReasoning First: Reason through the problem before providing structured answers. First understand the problem and devise a plan to solve the problem. Then, carry out the plan and solve the problem step-by-step."
+        },
+        {
+            "role": "user",
+            "content": "Reason through the problem, start with many possible choices to choose from. Then pick the most important variables (4~6) and exhaustively list all their possible Value. The Value are mutually exclusive and few (2~4). Grouping them to reduce complexity and represent common scenarios, but give concrete value names so they are interepretable on their own.\n"
+        }
+    ]
+}
