@@ -319,7 +319,7 @@ class AgentS2():
                 else:
                     got = 0
                 looped += 1
-                if looped > 5:
+                if looped > 3:
                     return None
             self.mega_records += [i.copy() for i in val_mess[-2:]]
         else:
