@@ -314,7 +314,7 @@ class AgentS2():
                 prob_mess, prob_js = self.get_prob(val_assist, question_js['Target'][0]['Name'])
                 if 'Probability' in prob_js:
                     got = len(prob_js['Probability'])
-                    if type(prob_js['Probability']) != list or len(prob_js['Probability']) == 0 or type(prob_js['Probability'])[0] not in [float, int]:
+                    if type(prob_js['Probability']) != list or len(prob_js['Probability']) == 0 or type(prob_js['Probability'][0]) not in [float, int]:
                         got = 0
                 else:
                     got = 0
