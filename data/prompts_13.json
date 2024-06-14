@@ -26,7 +26,7 @@
     "zero": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024, by guessing with commonsens. Understand the problem and devise a short plan to solve the problem. Carry out the plan and solve the problem step-by-step but concisely. In the end, present required numeric probabilities in a short sentence.'"
+            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024. Since there is no data available, rely on intuition and commonsense knowledge to make reasonable guesses.Understand the problem and devise a short plan to solve the problem. Carry out the plan and solve the problem step-by-step but concisely. In the end of your response, provide required numeric probabilities."
         }
     ],
     "question_text": [
