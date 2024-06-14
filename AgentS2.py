@@ -407,7 +407,7 @@ class AgentS2():
         schema = self.get_schema()
         self.log()
 
-        zero_prob, cot_prob = self.zero_cot()
+        #zero_prob, cot_prob = self.zero_cot()
 
 
         return self.records

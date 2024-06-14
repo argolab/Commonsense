@@ -130,6 +130,8 @@ class AgentS1():
         question_js = json.dumps(schema['Question'])
         schema.pop('Question')
         var_schema = json.dumps(schema)
+        # replace city name in the question
+        question_text = question_text.replace(self.city, '')
         new_message = "[Question] " + question_text + "\n\n"
         new_message += '[Database] ' + var_schema
         query_trans.append({'role': 'user', 'content': new_message})
