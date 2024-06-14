@@ -90,6 +90,8 @@ class Brute(nn.Module):
                     # sum of all probabilities should be 1
                     tot = 0
                     for prob in entry[self.batch_probability]:
+                        if type(prob) not in [int, float]:
+                            continue
                         tot += prob
                     if abs(tot - 1) > 0.05:
                         print("[Error]marginal do not add to 1: ", tot, " from ", entry[self.batch_probability], batch_target)
@@ -104,6 +106,9 @@ class Brute(nn.Module):
                 for target, prob in zip(batch_target, entry[self.batch_probability]):
                     if target is None:
                         print("ERROR: invalid constraint type 2", entry)
+                        continue
+                    if type(prob) not in [int, float]:
+                        print("ERROR: invalid probability", entry)
                         continue
                     self.add_constraint(target, condition, prob)
                     #if entry[self.batch_target][0]['Name'] == 'Price Ranges':
