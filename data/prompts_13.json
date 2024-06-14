@@ -2,7 +2,7 @@
     "cons_trans": [
         {
             "role": "system",
-            "content": "You are a transcriber tasked to convert an interview into JSON and provide querying messages. The interview is on analyzing Airbnb price. You will transcribe interview into JSON \"Constraints\" using given variables definition. Variables provided specify the variable \"Name\" and their possible \"Value\". The naming may change across dialogues but use ONLY the variable names in the CURRENT message. \nConstraints entries have two parts: \"Target\" and \"Condition\". They consist of a list of only \"Name\", representing P(Target|Condition).Note:\nUse only the variable names defined inside the message. The variable definitions do not carry over. Generate JSON without line breaks."
+            "content": "You are a transcriber tasked to convert an interview into JSON. You will transcribe interview into JSON \"Constraints\" using given variables definition. Variables provided specify the variable \"Name\" and their possible \"Value\". The naming may change across dialogues but use ONLY the variable names in the CURRENT message. \nConstraints entries have two parts: \"Target\" and \"Condition\". They consist of a list of only \"Name\", representing P(Target|Condition).Note:\nUse only the variable names defined inside the message. The variable definitions do not carry over. Generate JSON without line breaks."
         },
         {
             "role": "user",
@@ -26,13 +26,13 @@
     "zero": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024. Since there is no data available, rely on intuition and commonsense knowledge to make reasonable guesses.Understand the problem and then concisely solve the problem step-by-step. In the end of your response, provide required numeric probabilities."
+            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024. Since there is no data available, rely on intuition and commonsense knowledge to make reasonable guesses.Understand the problem and concisely solve the problem step-by-step. In the end of your response, provide required numeric probabilities."
         }
     ],
     "question_text": [
         {
             "role": "system",
-            "content": "Translate the provided JSON into question in English about Airbnb listings. We would like to get the distribution of the Target variable Value over the given conditions, conditioned on the variable Value in Condition. 'Other' denote the Value not conditioned on, you could it for disambiguating the conditions. "
+            "content": "Translate the provided JSON into question about Airbnb. Get the distribution of the Target variable Value conditioned on the Value in Condition. 'Other' denote Value not conditioned on, you could use it for disambiguating the conditions. "
         },
         {
             "role": "user",
@@ -54,15 +54,15 @@
     "get_prob": [
         {
             "role": "system",
-            "content": "Translate the probability into JSON. Only give the probability of the final answer."
+            "content": "Translate the probability into JSON (only the probability of the final answer). No extra line breaks or spaces."
         },
         {
             "role": "user",
-            "content": "\n- **$0 - $50**: This range might be rare.\n- **$51 - $100**: This range could include a significant portion of listings.\n- **$101 - $200**: Likely mid-tier listings.\n- **$201 - $400**: Likely for high-end listings.\n- $401 and above: Likely rare.\nWe can estimate the probabilities as follows:\n- $0 - $50: 10% - Rare, but possible in less desirable locations.\n- $51 - $100: 35% - Common for budget travelers and less expensive cities.\n- $101 - $200: 40% - Likely the most common range.\n- $201 - $400: 12% - High-end listings in major cities.\n- $401 and above: 3% - Luxury listings.\nSummary:\n- $0 - $50: 10%\n- $51 - $100: 35%\n- $101 - $200: 40%\n- $201 - $400: 12%\n- $401 and above: 3%\n"
+            "content": "We can estimate as follows:\n- $0-$50: 10%\n- $51-$100: 35%\n- $101-$200: 40% - Likely the most common range.\n- $201 - $400: 12% - High-end listings in major cities.\n- $401 and above: 3%\nSummary:\n- $0-$50: 10%\n- $51-$100: 35%\n- $101-$200: 40%\n- $201-$400: 12%\n- $401 and above: 3%\n"
         },
         {
             "role": "assistant",
-            "content": "{\"Probability\": [0.10, 0.35, 0.40, 0.12, 0.03]}"
+            "content": "{\"Probability\":[0.10,0.35,0.40,0.12,0.03]}"
         }
     ],
     "query_trans": [
