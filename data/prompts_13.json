@@ -54,7 +54,7 @@
     "get_prob": [
         {
             "role": "system",
-            "content": "Translate the probability into JSON (only the probability of the final answer). No extra line breaks or spaces."
+            "content": "Translate the final probabilities into JSON, with 'Probability' entry. No extra line breaks or spaces."
         },
         {
             "role": "user",
@@ -82,15 +82,15 @@
     "var_trans": [
         {
             "role": "system",
-            "content": "You will transcribe conversations during an interview into JSON. Provide \"Variables\" definition, each entry containing \"Name\" and \"Value\". Do not use line breaks. If the names are vague like \"basic\", include few more words."
+            "content": "You will transcribe conversations during an interview into JSON. Provide \"Variables\" definition, each entry containing \"Name\" and \"Value\". Do not use line breaks. Always include variable \"Name\": Price, \"Value\": [\"$0-$50\", \"$51-$100\", \"$101-$200\", \"$201-$500\", \"$501 and above\"]"
         },
         {
             "role": "user",
-            "content": "I think there should be: \nA with value a1, a2, a3+. \n(a3+ would mean larger than 3).\n B with value b1, b2\n C with value c1, c2. \n"
+            "content": "### Reasoning Through the Problem\nAdditionally, we should consider other factors that commonly influence Airbnb prices, such as property type, amenities, and location.\n\n### Potential Variables\n\n1. **Property Type**\n   - Different types of properties (e.g., entire home, private room, shared room) have different price ranges.\n   \n2. **Number of Bedrooms**\n   - More bedrooms generally mean higher prices.\n   \n3. **Amenities**\n   - Listings with more amenities (e.g., pool, Wi-Fi, kitchen) tend to be priced higher.\n   \n4. **Location**\n   - Proximity to popular attractions, beaches, and city centers can affect the price.\n   \n5. **Host Status**\n   - Superhosts may charge more due to their higher ratings and reliability.\n   \n6. **Seasonality**\n   - Prices may vary depending on the time of year (e.g., peak tourist season vs. off-season).\n\n### Selected Variables and Their Values\n\n1. **Property Type**\n   - Entire Home/Apartment\n   - Private Room\n   - Shared Room\n\n2. **Number of Bedrooms**\n   - 1 Bedroom\n   - 2 Bedrooms\n   - 3+ Bedrooms\n\n3. **Amenities**\n   - Basic (e.g., Wi-Fi, kitchen)\n   - Premium (e.g., pool, hot tub, gym)\n   - Luxury (e.g., private beach access, home theater)\n\n4. **Location**\n   - Near Beach\n   - City Center\n   - Suburban\n\n5. **Host Status**\n   - Superhost\n   - Regular Host\n\n6. **Seasonality**\n   - Peak Season (e.g., winter holidays, spring break)\n   - Off-Season (e.g., summer, fall)\n\n### Exhaustive List of Values\n\n1. **Property Type**\n   - Entire Home/Apartment\n   - Private Room\n   - Shared Room\n\n2. **Number of Bedrooms**\n   - 1 Bedroom\n   - 2 Bedrooms\n   - 3+ Bedrooms\n\n3. **Amenities**\n   - Basic\n   - Premium\n   - Luxury\n\n4. **Location**\n   - Near Beach\n   - City Center\n   - Suburban\n\n5. **Host Status**\n   - Superhost\n   - Regular Host\n\n6. **Seasonality**\n   - Peak Season\n   - Off-Season\n\n### These variables cover a wide range of factors that influence pricing and will help us answer specific questions, such as the price of an Airbnb listing hosted by a superhost."
         },
         {
             "role": "assistant",
-            "content": "{\"Variables\":[{\"Name\":\"A\",\"Value\":[\"a1\",\"a2\",\"a3+: larger than 3\"]},{\"Name\":\"B\",\"Value\":[\"b1\",\"b2\"]},{\"Name\":\"C\",\"Value\":[\"c1\",\"c2\"]}]}"
+            "content": "{\"Variables\": [{\"Name\": \"Property Type\", \"Value\": [\"Entire Home/Apartment\", \"Private Room\", \"Shared Room\"]},{\"Name\": \"Number of Bedrooms\", \"Value\": [\"1 Bedroom\", \"2 Bedrooms\", \"3+ Bedrooms\"]},{\"Name\": \"Amenities\", \"Value\": [\"Basic\", \"Premium\", \"Luxury\"]},{\"Name\": \"Location\", \"Value\": [\"Near Beach\", \"City Center\", \"Suburban\"]},{\"Name\": \"Host Status\", \"Value\": [\"Superhost\", \"Regular Host\"]},{\"Name\": \"Seasonality\", \"Value\": [\"Peak Season\", \"Off-Season\"]},{\"Name\": \"Price\", \"Value\": [\"$0-$50\", \"$51-$100\", \"$101-$200\", \"$201-$500\", \"$501 and above\"]}]\n}"
         }
     ],
     "eval_question_text": [
