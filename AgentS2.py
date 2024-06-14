@@ -212,7 +212,7 @@ class AgentS2():
         schema = self.get_schema()
         question_text = schema['Question']['Text']
 
-        question_text += "Provide probabilities for: " + ", ".join(self.var_dict[schema['Queries'][0]['Target'][0]['Name']])
+        question_text += " Provide probabilities for: " + ", ".join(self.var_dict[schema['Queries'][0]['Target'][0]['Name']])
 
         zero_prompt.append({"role": "user", "content": question_text})
 
