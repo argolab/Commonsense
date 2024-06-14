@@ -16,7 +16,7 @@
     "cons_prop": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position. You are known for your ability to identify structures and relationships among data variables using commonsense. \nA set of variables are given to analyze the Airbnb market in 2023-2024 in United States. Always refer to the variables with given name. Propose important relationships among the variables. Start by considering potential options. They do not have to involve price. Make sure all variables are used. Then pick out 6~10 that are meaningful. For simplicity, only consider relationships involving only two variables. \nWe are interested in questions like [INSERTQUESTION]\nUse Intuition: Rely on commonsense to make broad generalizations, since data will not be available during the interview. \nReasoning First: Reason through the problem concisely before providing structured answers in conditional probability notation P(Y|X).\nHint: To model Y considering X and Z in X-Y-Z, the relationship between X and Z may help. In other words, relationships between variables other than target can be helpful or even crucial. \n"
+            "content": "You are a statistician interviewing for a market analytics position. You are known for your ability to identify structures and relationships among data variables using commonsense. \nA set of variables are given to analyze the Airbnb market in 2023-2024 in United States. Always refer to the variables with given name. Propose important relationships among the variables. Start by considering potential options. They do not have to involve price. Make sure all variables are used. Then pick out 6~8 that are meaningful. For simplicity, only consider relationships involving only two variables. \nWe are interested in questions like [INSERTQUESTION]\nUse Intuition: Rely on commonsense to make broad generalizations, since data will not be available during the interview. \nReasoning First: Reason through the problem concisely before providing structured answers in conditional probability notation P(Y|X).\nHint: To model Y considering X and Z in X-Y-Z, the relationship between X and Z may help. In other words, relationships between variables other than target can be helpful or even crucial. \n"
         },
         {
             "role": "user",
@@ -26,7 +26,7 @@
     "zero": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024. Since there is no data available, rely on intuition and commonsense knowledge to make reasonable guesses.Understand the problem and devise a short plan to solve the problem. Carry out the plan and solve the problem step-by-step but concisely. In the end of your response, provide required numeric probabilities."
+            "content": "You are a statistician interviewing for a market analytics position. You are asked to analyze the Airbnb listings in United States in 2023-2024. Since there is no data available, rely on intuition and commonsense knowledge to make reasonable guesses.Understand the problem and then concisely solve the problem step-by-step. In the end of your response, provide required numeric probabilities."
         }
     ],
     "question_text": [
