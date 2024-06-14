@@ -91,6 +91,7 @@ class Brute(nn.Module):
                     tot = 0
                     for prob in entry[self.batch_probability]:
                         if type(prob) not in [int, float]:
+                            print(prob)
                             continue
                         tot += prob
                     if abs(tot - 1) > 0.05:
