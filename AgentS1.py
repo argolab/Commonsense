@@ -104,7 +104,7 @@ class AgentS1():
         
         var_trans = self.prompt('var_trans')
 
-        prop_assist += "Do not forget variable " + self.pbins
+        #prop_assist += "Do not forget about variable " + self.pbins
 
         var_trans.append({'role': 'user', 'content': prop_assist})
 
