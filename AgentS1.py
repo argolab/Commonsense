@@ -159,9 +159,9 @@ class AgentS1():
         prop = self.prompt('var_prop')
 
         
-        prop[-1]['content'] += "Additionally, we would focus on question like: " + question
+        prop[-1]['content'] += "We would focus on question like: " + question
         prop[-1]['content'] += " Therefore, make sure the variable values at least cover those in the question. "
-        prop[-1]['content'] += "Propose 2~3 variables in your final summary. "
+        #prop[-1]['content'] += "Propose 2~3 variables in your final summary. "
 
 
         response = self.client.chat.completions.create(
@@ -176,6 +176,7 @@ class AgentS1():
         
         # Append the assistant's response to the message list
         prop.append({"role": "assistant", "content": assistant_message})
+        print(assistant_message)
 
         return prop.copy(), assistant_message
 

@@ -61,7 +61,7 @@ class DatasetQ():
         #print(city, " : ", len(tmp))
         for c in cond:
             variable_name = c['Name']
-            #tmp = tmp.dropna(subset=[variable_name])
+            tmp = tmp.dropna(subset=[variable_name])
             variable_value = c['Value']
             if variable_name == 'City':
                 city = variable_value
