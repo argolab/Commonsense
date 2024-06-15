@@ -1,25 +1,14 @@
 {
     "Target": [
         {
-            "Name": "price",
-            "Type": "float"
+            "Name": "Price"
         }
     ],
     "Condition": [
         {
-            "Name": "property type",
-            "Type": "str",
-            "Value": ["villa"]
-        },
-        {
-            "Name": "bathrooms",
-            "Type": "int",
-            "Value": ["2", "3+"]
-        },
-        {
-            "Name": "city",
-            "Type": "str",
-            "Value": ["New York", "Los Angeles"]
+            "Name": "Host Experience",
+            "Value": ["<1 year"]
         }
-    ]
+    ],
+    "City": "Broward County, FL"
 }

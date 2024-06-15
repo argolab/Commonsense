@@ -138,7 +138,7 @@ class AgentS1():
 
 
         response = self.client.chat.completions.create(
-            model=self.model_trans,
+            model=self.model_dial,
             response_format={ "type": "json_object" },
             temperature=0,
             messages=query_trans
@@ -158,7 +158,7 @@ class AgentS1():
         
         prop[-1]['content'] += "Additionally, we would focus on question like: " + question
         prop[-1]['content'] += " Therefore, make sure the variable values at least cover those in the question. "
-        prop[-1]['content'] += "Think about the question first. What can you infer to help with modeling? Feel free to choose other variables that help model that question. However, only provide the variables but don't proceed to solve the question. "
+        prop[-1]['content'] += "Propose 2~3 variables in your final summary. "
 
 
         response = self.client.chat.completions.create(

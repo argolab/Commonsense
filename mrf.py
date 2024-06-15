@@ -3,7 +3,7 @@ from torch import nn
 import pandas as pd
 import json
 import tqdm
-
+import random
 
 class Brute(nn.Module):
     def __init__(self, verbose=False):
@@ -81,6 +81,7 @@ class Brute(nn.Module):
             if entry is None:
                 continue
             condition = self.translate(entry['Condition']) if 'Condition' in entry else None
+            #print(condition)
             if '(Deprecated)Target' not in entry:
                 if self.batch_target not in entry or self.batch_probability not in entry:
                     print("ERROR: Invalid constraint type 1", entry)
@@ -104,7 +105,11 @@ class Brute(nn.Module):
                 if len(batch_target) != len(entry[self.batch_probability]):
                     print("ERROR: length of target does not match probability", entry)
                     continue
-                for target, prob in zip(batch_target, entry[self.batch_probability]):
+
+                # pick two random out of batch
+                picks = random.sample(range(len(batch_target)), len(batch_target)//2)
+
+                for n, (target, prob) in enumerate(zip(batch_target, entry[self.batch_probability])):
                     if target is None:
                         print("ERROR: invalid constraint type 2", entry)
                         continue
@@ -139,8 +144,8 @@ class Brute(nn.Module):
             self.var_dict[name] = j
             self.var_dict[j] = name
         self.N = len(self.total_pos)
-        if self.verbose:
-            self.vars_print()
+        #if self.verbose:
+        #    self.vars_print()
 
     def vars_print(self):
         """
@@ -172,6 +177,7 @@ class Brute(nn.Module):
             conditions = cond_firing
 
             return targets / conditions
+            
 
 
     def calculate_entropy(self,):
@@ -205,12 +211,14 @@ class Brute(nn.Module):
 
     def get_mask(self, inputs, condition=None):
 
+
         checker = torch.arange(0, self.universe.shape[0])
         ret = torch.ones(self.universe.shape[0]).bool() if condition is None else condition
 
 
         if torch.is_tensor(inputs):
             inputs = inputs.int().tolist()
+
         if inputs is None:
             return ret.flatten()
 
@@ -235,6 +243,7 @@ class Brute(nn.Module):
     def translate(self, inputs):
         ret = [-1 for i in range(self.N)]
         for input in inputs:
+            #print("translate input", input)
             possible_values = []
             var_ind = -1
             if type(input['Name']) == str:
@@ -242,19 +251,24 @@ class Brute(nn.Module):
             elif type(input['Name']) == int:
                 var_ind = input['Name']
             if var_ind == -1:
-                print("ERROR: Invalid input")
+                print("ERROR: Invalid input var not found")
+                continue
                 return None
-            for val in input['Value']:
-                val_ind = -1
-                if type(val) == str:
-                    val_ind = self.val_name2ind(var_ind, val)
-                elif type(val) == int:
-                    val_ind = val
-                if val_ind == -1:
-                    print("ERROR: Invalid input")
-                    return None
-                possible_values.append(val_ind)
-            ret[var_ind] = tuple(possible_values)
+            if type(input['Value']) == list and len(input['Value']) == 0:
+                ret[var_ind] = -1
+            else:
+                for val in input['Value']:
+                    val_ind = -1
+                    if type(val) == str:
+                        val_ind = self.val_name2ind(var_ind, val)
+                    elif type(val) == int:
+                        val_ind = val
+                    if val_ind == -1:
+                        print("ERROR: Invalid input val not found")
+                        continue
+                        return None
+                    possible_values.append(val_ind)
+                ret[var_ind] = tuple(possible_values)
         return ret
 
     def batch_translate(self, inputs):
@@ -301,6 +315,7 @@ class Brute(nn.Module):
             
             condition = self.get_mask(cond)
             target = self.get_mask(tar, condition=condition)
+            #print(tar, cond, target, condition, prob)
 
             tar_tup = tuple(target.tolist())
             cond_tup = tuple(condition.tolist())
@@ -313,6 +328,7 @@ class Brute(nn.Module):
                 constraints[(tar_tup, cond_tup)] = i
             self.targets.append(target)
             self.conditions.append(condition)
+
 
             if tar_tup not in features:
                 features.add(tar_tup)
@@ -371,12 +387,12 @@ class Brute(nn.Module):
             top_bot_firing = (self.top_bottom * firing)
             top_bot = top_bot_firing.sum(dim=-1)
 
-            loss = top_bot[0]/top_bot[1] - self.constraints_values
+            loss = (top_bot[0]/top_bot[1] - self.constraints_values)
             # cut out ones with loss less than 0.02
             if not slack:
                 loss = loss.pow(2).sum()
             else:
-                loss = loss[torch.abs(loss) > 0.01].pow(2).sum()
+                loss = loss[torch.abs(loss) < 0.0001].pow(2).sum()
 
             if self.w0 != 0:
                 loss_ent = self.w0 * self.calculate_entropy()
@@ -387,7 +403,7 @@ class Brute(nn.Module):
             self.optim.step()
             self.losses.append(loss.detach())
             if self.verbose:
-                if n % (epochs // 10) == 0 or n == epochs - 1:
+                if n % (epochs // 5) == 0 or n == epochs - 1:
                     tmp = top_bot[0]/top_bot[1] - self.constraints_values
                     if loss_ent != 0:
                         print("Entropy: ", loss_ent)
@@ -474,6 +490,8 @@ class Brute(nn.Module):
         """
         # translate the condition for input to translate()
         proc_cond = []
+        if condition is None:
+            condition = []
         if type(condition) != list:
             for key, values in condition.items():
                 proc_cond.append({'Name': key, 'Value': values})
@@ -485,6 +503,8 @@ class Brute(nn.Module):
             proc_tar = self.var_dict[target]
         elif target == -1:
             proc_tar = self.N - 1
+        else:
+            proc_tar = target
 
         cond = self.translate(proc_cond)
         #print("Condition: ", cond, proc_cond)
@@ -519,7 +539,7 @@ class Brute(nn.Module):
                         query_target_var = target['Name']
                         break
                     if 'Condition' not in entry:
-                        condition = None
+                        condition = []
                     else:
                         condition = entry['Condition']
                     ret.append(self.marg(target=query_target_var, condition=condition))

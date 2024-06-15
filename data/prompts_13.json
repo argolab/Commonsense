@@ -16,7 +16,7 @@
     "cons_prop": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position. You are known for your ability to identify structures and relationships among data variables using commonsense. \nA set of variables are given to analyze the Airbnb market in 2023-2024 in United States. Always refer to the variables with given name. Propose important relationships among the variables. Start by considering potential options. They do not have to involve price. Make sure all variables are used. Then pick out 6~8 that are meaningful. For simplicity, only consider relationships involving only two variables. \nWe are interested in questions like [INSERTQUESTION]\nUse Intuition: Rely on commonsense to make broad generalizations, since data will not be available during the interview. \nReasoning First: Reason through the problem concisely before providing structured answers in conditional probability notation P(Y|X).\nHint: To model Y considering X and Z in X-Y-Z, the relationship between X and Z may help. In other words, relationships between variables other than target can be helpful or even crucial. \n"
+            "content": "You are a statistician interviewing for a market analytics position. You are known for your ability to identify structures and relationships among data variables using commonsense. \nA set of variables are given to analyze the Airbnb market in 2023-2024 in United States. Always refer to the variables with given name. Propose important relationships among the variables. Start by understanding each variable, and then consider potential options. Make sure all variables are used. Then pick out 4~6 that are meaningful and logically sound. Critique your answers afterwards to see if you are making unsound assumptions. Afterwards present you final answers. For simplicity, only consider relationships involving only two variables. \nWe are interested in questions like [INSERTQUESTION]\nUse Intuition: Rely on commonsense to make broad generalizations, since data will not be available during the interview. \nReasoning First: Reason through the problem concisely before providing structured answers in conditional probability notation P(Y|X).\nHint: To model Y considering X and Z in X-Y-Z, the relationship between X and Z may help. In other words, relationships between variables other than target can be helpful or even crucial. \n"
         },
         {
             "role": "user",
@@ -68,7 +68,7 @@
     "query_trans": [
         {
             "role": "system",
-            "content": "You will transcribe a JSON \"Queries\" with given \"Variables\" and a question. \"Variables\" define \"Name\" and \"Value\". \"Queries\" express P(Target|Condition). Give \"Name\" for \"Target\", \"Name\" and \"Value\" for \"Condition\". Multiple \"Condition\" entries express union. If there is no matching \"Condition\", leave it empty as \"Condition\": []. Keep the naming consistent. Do not use line breaks or make additional assumptions beyond variables the question states."
+            "content": "You will transcribe a JSON \"Queries\" with given \"Variables\" and a question. \"Variables\" define \"Name\" and \"Value\". \"Queries\" express P(Target|Condition). Give \"Name\" for \"Target\", \"Name\" and \"Value\" for \"Condition\". Multiple \"Condition\" entries express union. If there is no matching \"Condition\", leave it empty as \"Condition\": []. Keep the naming consistent. Do not use line breaks or make additional assumptions beyond variables the question states. "
         },
         {
             "role": "user",
@@ -82,7 +82,7 @@
     "var_trans": [
         {
             "role": "system",
-            "content": "You will transcribe conversations during an interview into JSON. Provide \"Variables\" definition, each entry containing \"Name\" and \"Value\". Do not use line breaks. Always include variable \"Name\": Price, \"Value\": [\"$0-$50\", \"$51-$100\", \"$101-$200\", \"$201-$500\", \"$501 and above\"]"
+            "content": "You will transcribe conversations during an interview into JSON. Provide \"Variables\" definition, each entry containing \"Name\" and \"Value\". Do not use line breaks. Always include variable \"Name\": Price, \"Value\": [\"$0-$50\", \"$51-$100\", \"$101-$200\", \"$201-$500\", \"$501 and above\"]."
         },
         {
             "role": "user",
@@ -118,11 +118,11 @@
     "var_prop": [
         {
             "role": "system",
-            "content": "You are a statistician interviewing for a market analytics position.\nYou are known for your ability to identify structures and relationships among data variables using commonsense.\nYou are asked to analyze the nightly price of Airbnb listings in 2023-2024 in United States. Now you are asked to propose variables to consider in analysis. For simplicity, variable price is already divided into ranges for you: [PRICEBINS]\n\nAdvice: 1. To model A considering B in graph A-B, using a latent variable C to model B (A-B-C) helps with the estimation as it helps understand B. \n2. To model Y considering X and Z in X-Y-Z, it helps to think about the relationship between X and Z.\nIn other words, structures not involving price is also helpful. \n\nUse Intuition: Rely on commonsense to make broad generalizations. \nReasoning First: Reason through the problem before providing structured answers. First understand the problem and devise a plan to solve the problem. Then, carry out the plan and solve the problem step-by-step."
+            "content": "You are a statistician interviewing for a market analytics position.\nYou are known for your ability to identify structures and relationships among data variables using commonsense.\nYou are asked to analyze the nightly price of Airbnb listings in 2023-2024 in United States. Now you are asked to propose variables to consider in analysis. For simplicity, variable price is already divided into ranges for you: [PRICEBINS]\n\nAdvice: 1. To model A considering B in graph A-B, using a latent variable C to model B (A-B-C) helps with the estimation as it helps understand B. \n2. To model Y considering X and Z in X-Y-Z, it helps to think about the relationship between X and Z.\nIn other words, think about how to capture the market structure. \nReason through the problem, start with possible choices to choose from. Then decide on the most important variables (2~3) and exhaustively list all their possible Value. The Value are mutually exclusive and few (2~4). Grouping them to reduce complexity and represent common scenarios, but give concrete value names so they are interepretable on their own. In the end, check to make sure you satisfy the requirements and present your choices in summary. Make sure you understand the problem and concisely solve the problem step-by-step."
         },
         {
             "role": "user",
-            "content": "Reason through the problem, start with many possible choices to choose from. Then pick the most important variables (4~6) and exhaustively list all their possible Value. The Value are mutually exclusive and few (2~4). Grouping them to reduce complexity and represent common scenarios, but give concrete value names so they are interepretable on their own.\n"
+            "content": "\nNow give me "
         }
     ]
 }
