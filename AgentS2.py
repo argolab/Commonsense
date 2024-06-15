@@ -55,6 +55,7 @@ class AgentS2():
 
         self.records = {}
         self.records['schema'] = json.loads(json.dumps(self.schema))
+        self.records['city'] = city
 
         self.mega_records = []
 

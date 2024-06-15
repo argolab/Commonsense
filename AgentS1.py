@@ -10,6 +10,7 @@ import numpy as np
 import argparse
 dotenv.load_dotenv('.env')
 
+
 class AgentS1():
     def __init__(self, prompts, question_schema, price_bin='', log_dir='./example_files', log_name='s2ex.json', city='United States', model_dial='gpt-4o', model_trans='gpt-3.5-turbo', chat_temp=0.3):
 
@@ -54,11 +55,13 @@ class AgentS1():
 
         self.records = {}
         self.records['schema'] = json.loads(json.dumps(self.schema))
+        self.records['city'] = city
 
 
     def log(self):
         # log self.records
         json.dump(self.records, open(self.log_path, 'w'), indent=2)
+        #print(self.log_path)
 
     def prompt(self, name):
         return [i.copy() for i in self.prompts[name]]
@@ -178,7 +181,8 @@ class AgentS1():
 
 
     def compile(self, ):
-
+        
+        self.log()
         
         schema = self.get_schema()
         if 'Text' not in schema['Question']:
@@ -211,6 +215,7 @@ class AgentS1():
         schema['Queries'] = json.loads(query_assist)['Queries']
         self.set_schema(schema)
         self.records['schema'] = schema
+        self.log()
 
         return self.get_schema()
 

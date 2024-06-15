@@ -1,4 +1,12 @@
 {
+    "Question": {
+      "Target": [
+        {
+          "Name": "Price"
+        }
+      ],
+      "Text": "What is the nightly price of an Airbnb listing in Los Angeles, CA?"
+    },
     "Variables": [
         {
             "Name": "Number of Bedrooms",
@@ -59,24 +67,6 @@
             ]
         },
         {
-            "Name": "Month",
-            "Value": [
-                "Jan-Apr",
-                "May-Aug",
-                "Sep-Dec"
-            ]
-        },
-        {
-            "Name": "Max Accommodates",
-            "Value": [
-                "1",
-                "2",
-                "3",
-                "4",
-                "4+"
-            ]
-        },
-        {
             "Name": "Price",
             "Value": [
                 "<$50",
@@ -88,18 +78,6 @@
         }
     ],
     "Constraints": [
-        {
-            "Target": [
-                {
-                    "Name": "Max Accommodates"
-                }
-            ],
-            "Condition": [
-                {
-                    "Name": "Total Beds"
-                }
-            ]
-        },
         {
             "Target": [
                 {
@@ -168,31 +146,7 @@
             ],
             "Condition": [
                 {
-                    "Name": "Month"
-                }
-            ]
-        },
-        {
-            "Target": [
-                {
-                    "Name": "Price"
-                }
-            ],
-            "Condition": [
-                {
                     "Name": "Review Score"
-                }
-            ]
-        },
-        {
-            "Target": [
-                {
-                    "Name": "Max Accommodates"
-                }
-            ],
-            "Condition": [
-                {
-                    "Name": "Number of Bedrooms"
                 }
             ]
         },
@@ -207,6 +161,16 @@
                     "Name": "Host Experience"
                 }
             ]
+        }
+    ],
+    "Queries": [
+        {
+            "Target": [
+                {
+                    "Name": "Price"
+                }
+            ],
+          "Condition": []
         }
     ]
 }
