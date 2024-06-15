@@ -276,7 +276,7 @@ class AgentS2():
         #print("Proposing constraints...")
         cons_prompt = self.prompt('cons_prop')
         schema_text = self.schema_text(shuffle)
-        cons_prompt[-1]['content'] += schema_text
+        cons_prompt[-1]['content'] += schema_text + '\n Think about how does it help with our question ' + schema['Question']['Text'] + '?'
         prop_mess, prop_assist = self.chat(cons_prompt)
 
         self.mega_records += [i.copy() for i in prop_mess[-2:]]
