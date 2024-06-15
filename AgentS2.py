@@ -137,7 +137,7 @@ class AgentS2():
 
         if add_city:
             js_question['Condition'].append({'Name': 'City', 'Value': [self.city]})
-            cond_append += ' in ' + self.city
+            #cond_append += ' in ' + self.city
         
         tar = js_question['Target'][0]['Name']
         tar_vals = self.var_dict[tar]
@@ -214,7 +214,7 @@ class AgentS2():
         schema = self.get_schema()
         question_text = schema['Question']['Text']
 
-        question_text += " Provide probabilities for: " + ", ".join(self.var_dict[schema['Queries'][0]['Target'][0]['Name']])
+        question_text += " Provide probabilities for: " + ", ".join(self.var_dict[schema['Queries'][0]['Target'][0]['Name']])+ ' Ensure they sum to 1. '
 
         zero_prompt.append({"role": "user", "content": question_text})
 
