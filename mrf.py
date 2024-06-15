@@ -95,11 +95,13 @@ class Brute(nn.Module):
                             print(prob)
                             continue
                         tot += prob
-                    if abs(tot - 1) > 0.05:
+
+                    if abs(tot - 1) > 0.1:
                         print("[Error]marginal do not add to 1: ", tot, " from ", entry[self.batch_probability], batch_target)
                         continue
-                        entry[self.batch_probability] = [prob / tot for prob in entry[self.batch_probability]]
-                        print("Normalized to ", entry[self.batch_probability])
+                    elif abs(tot - 1) > 0.01:
+                        print("[Error]marginal do not add to 1, normalize: ", tot, " from ", entry[self.batch_probability], batch_target)
+                    entry[self.batch_probability] = [prob / tot for prob in entry[self.batch_probability]]
                 if batch_target is None:
                     continue
                 if len(batch_target) != len(entry[self.batch_probability]):
